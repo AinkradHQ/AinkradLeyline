@@ -17,7 +17,7 @@ packages:
     # Must be <= the revision the HOST embeds. A plugin built against a newer
     # SDK than the host ships cannot resolve its symbols and dies at
     # `Bundle.load()`. This is the host's current pin.
-    revision: 91ed630a24dc187f8988c104d16a640d3ee7562c
+    revision: 7bb80e9f1d01d468949f6c776dd111c9d6b8d690
 targets:
   LeylineFeature:
     type: library.static
