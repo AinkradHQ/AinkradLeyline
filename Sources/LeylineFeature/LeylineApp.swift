@@ -102,7 +102,7 @@ public struct LeylineApp: AinkradApp {
     }
 
     public static func makeSettingsView(host: HostServices) -> AnyView {
-        AnyView(LeylineSettingsView(presentation: host.presentation))
+        AnyView(LeylineSettingsView(presentation: host.presentation, modeControl: host.mode))
     }
 
     public static func chromeFill(host: HostServices) -> Color? {

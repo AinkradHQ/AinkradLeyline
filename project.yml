@@ -23,7 +23,8 @@ packages:
     # MUST NOT be released until an installed host is generation 11: a plugin
     # pinned ahead of the host that loads it links symbols that host lacks and
     # dies at `Bundle.load()` with no diagnostic ("no apps").
-    revision: c315110481461b1b2f14c129401b72d25107aab3
+    # 43868c9: AinkradSurfaceSettings -- the shared Open as / Open in rows.
+    revision: 43868c968b8c4111f7cfa7d05fd903fcc9277d63
 targets:
   LeylineFeature:
     type: library.static
