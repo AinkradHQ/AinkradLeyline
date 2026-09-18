@@ -24,7 +24,7 @@ packages:
     # pinned ahead of the host that loads it links symbols that host lacks and
     # dies at `Bundle.load()` with no diagnostic ("no apps").
     # 43868c9: AinkradSurfaceSettings -- the shared Open as / Open in rows.
-    revision: 43868c968b8c4111f7cfa7d05fd903fcc9277d63
+    revision: 15b579959e3123841be3c67dcf4dc91a15205a74
 targets:
   LeylineFeature:
     type: library.static
