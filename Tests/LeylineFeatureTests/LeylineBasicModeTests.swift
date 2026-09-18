@@ -111,6 +111,8 @@ private final class BasicModeHost: HostServices {
     var apps: PluginAppLauncher { launcher }
     var presentation: PluginPresentationControl { FakePresentation() }
     var mode: PluginModeControl { FakeMode() }
+    /// Generation 11, alongside the overlay-size control.
+    var overlaySize: PluginOverlaySizeControl { StubOverlaySize() }
     var signals: PluginSignalEmitter { NoopSignalEmitter() }
 }
 
@@ -139,5 +141,12 @@ private struct FakeLog: PluginLogger {
 @MainActor private struct FakeMode: PluginModeControl {
     var current: PluginMode { .basic }
     func set(_ mode: PluginMode) {}
+    func reset() {}
+}
+
+@MainActor
+private struct StubOverlaySize: PluginOverlaySizeControl {
+    var current: PluginOverlaySize { .medium }
+    func set(_ size: PluginOverlaySize) {}
     func reset() {}
 }
