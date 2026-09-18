@@ -1,22 +1,18 @@
 import SwiftUI
 import AinkradAppKit
 
-/// Leyline's settings surface — an info blurb plus a "Presentation"
-/// (pane/overlay) control on the Cardinal HUD kit. Backed by
-/// `HostServices.presentation` (`PluginPresentationControl`): the override
-/// takes effect the next time Leyline is opened, mirroring the host's own
-/// contract (never morphs an already-open window).
+/// Leyline's settings surface — an info blurb plus the shared surface rows.
+///
+/// "Open as" and "Open in" come from `AinkradSurfaceSettings` rather than being
+/// spelled out here, so they read the same and sit in the same place in every
+/// app. Both are backed by the host's controls, which persist the override;
+/// this view keeps no copy of either.
 struct LeylineSettingsView: View {
     let presentation: any PluginPresentationControl
+    let modeControl: any PluginModeControl
 
     @Environment(\.ainkradTheme) private var theme
     @Environment(\.ainkradTypography) private var typo
-    @State private var mode: PluginPresentation
-
-    init(presentation: any PluginPresentationControl) {
-        self.presentation = presentation
-        _mode = State(initialValue: presentation.current)
-    }
 
     var body: some View {
         AinkradCard {
@@ -25,14 +21,11 @@ struct LeylineSettingsView: View {
                     .font(AinkradFontResolver.font(.body, typography: typo))
                     .foregroundStyle(theme.foreground)
 
-                AinkradFormRow(title: "Presentation", help: "Applies the next time Leyline opens.") {
-                    AinkradSegmentedPicker(items: [PluginPresentation.pane, .overlay], selection: $mode) {
-                        $0 == .pane ? "Pane" : "Overlay"
-                    }
-                }
+                AinkradSurfaceSettings(appName: "Leyline",
+                                       presentation: presentation,
+                                       mode: modeControl)
             }
         }
         .padding()
-        .onChange(of: mode) { _, newValue in presentation.set(newValue) }
     }
 }
