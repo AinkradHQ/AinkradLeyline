@@ -98,8 +98,7 @@ public struct LeylineApp: AinkradApp {
     }
 
     public static func makeRootView(host: HostServices) -> AnyView {
-        registerActions(for: host)
-        return AnyView(LeylineRootView(store: store(for: host), theme: host.theme, launcher: host.apps))
+        makeRootView(host: host, mode: .advanced)
     }
 
     public static func makeSettingsView(host: HostServices) -> AnyView {
@@ -146,5 +145,28 @@ extension LeylineApp: AinkradAppTeardown {
             registration.provider.remove(registration.token)
         }
         SSHKeyMaterializer.purgeAll()
+    }
+}
+
+/// Generation 11: Leyline has a basic mode — pick a connection, connect.
+///
+/// Opt-in by conformance, found by the host's cast, so an SDK that gains this
+/// does not require anything of an app that has no use for it.
+extension LeylineApp: AinkradAppModes {
+    public static func makeRootView(host: HostServices, mode: PluginMode) -> AnyView {
+        registerActions(for: host)
+        let store = store(for: host)
+        switch mode {
+        case .basic:
+            return AnyView(LeylineBasicView(store: store, theme: host.theme, launcher: host.apps))
+        case .advanced:
+            return AnyView(LeylineRootView(store: store, theme: host.theme, launcher: host.apps))
+        // `PluginMode` lives in a resilient module, so a newer SDK may add a
+        // case this build has never seen. Fall back to ADVANCED: showing
+        // everything is always correct, while guessing "basic" would hide
+        // controls for a mode we do not understand.
+        @unknown default:
+            return AnyView(LeylineRootView(store: store, theme: host.theme, launcher: host.apps))
+        }
     }
 }

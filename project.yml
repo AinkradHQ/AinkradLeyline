@@ -17,7 +17,13 @@ packages:
     # Must be <= the revision the HOST embeds. A plugin built against a newer
     # SDK than the host ships cannot resolve its symbols and dies at
     # `Bundle.load()`. This is the host's current pin.
-    revision: 7bb80e9f1d01d468949f6c776dd111c9d6b8d690
+    # c315110: generation 11 -- Basic Mode. `AinkradAppModes` (opt-in, found by
+    # cast) plus `AinkradBasicShell` / `AinkradModeSwitch`, the shared surface.
+    #
+    # MUST NOT be released until an installed host is generation 11: a plugin
+    # pinned ahead of the host that loads it links symbols that host lacks and
+    # dies at `Bundle.load()` with no diagnostic ("no apps").
+    revision: c315110481461b1b2f14c129401b72d25107aab3
 targets:
   LeylineFeature:
     type: library.static
