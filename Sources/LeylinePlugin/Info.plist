@@ -12,5 +12,6 @@
     <key>AinkradIconSymbol</key><string>point.3.connected.trianglepath.dotted</string>
     <key>AinkradAPIVersion</key><integer>7</integer>
     <key>AinkradPresentation</key><string>overlay</string>
+    <key>AinkradMode</key><string>basic</string>
 </dict>
 </plist>

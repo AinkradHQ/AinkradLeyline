@@ -147,42 +147,9 @@ struct LeylineRootView: View {
         copied = conn.id
     }
 
+    /// Delegates to `LeylineConnectAction` so advanced and basic share ONE
+    /// implementation — see that type for why a second copy is a bug waiting.
     private func connect(_ conn: LeylineConnection) {
-        // One implementation of "make this connection's key readable by ssh",
-        // shared with the agent-initiated connect in `LeylineMCPOperations`.
-        // While it lived here, the tool path had to either duplicate it or go
-        // without a key — it went without, and users got Permission denied.
-        let identityFile = SSHIdentityResolver.resolve(conn, store: store).path
-        // `SSHLaunchPayload` is now the SHARED SDK type — one definition,
-        // versioned, and validated on both sides. Leyline previously had its
-        // own `Encodable` struct and Rune its own `Decodable` mirror, kept
-        // in sync by hand across two repos.
-        let payload = SSHLaunchPayload(
-            host: conn.host, port: conn.port, username: conn.username, identityFile: identityFile
-        )
-        // Validate before sending. Every field lands in an `ssh` argv, and
-        // `ssh`'s option surface (`-o ProxyCommand=…`) runs shell commands — so
-        // a hostile hostname or username is code execution. Refusing here means
-        // the malformed connection never leaves this process.
-        guard let safe = try? payload.validated() else {
-            launchError = "This connection has an unsafe host, username or key path."
-            return
-        }
-        // Report the outcome instead of discarding it. `open(appID:payload:)`
-        // returns Void, so this button looked identical whether Rune opened
-        // or was not installed at all.
-        let outcome = (launcher as? PluginAppLauncherResult)?
-            .openReportingOutcome(appID: "rune", payload: safe.json)
-            ?? { launcher.open(appID: "rune", payload: safe.json); return .opened }()
-        switch outcome {
-        case .opened:            launchError = nil
-        case .unknownApp:        launchError = "Rune isn't installed — install it from the App Store."
-        case .disabled:          launchError = "Rune is disabled — enable it in the App Store."
-        case .refused(let why):  launchError = "Couldn't open Rune: \(why)"
-        // `PluginLaunchOutcome` lives in a resilient module, so the compiler
-        // requires a default: a newer SDK may add a case this build has never
-        // seen. Treat anything unknown as a failure rather than as success.
-        @unknown default:        launchError = "Couldn't open Rune."
-        }
+        launchError = LeylineConnectAction.connect(conn, store: store, launcher: launcher)
     }
 }
