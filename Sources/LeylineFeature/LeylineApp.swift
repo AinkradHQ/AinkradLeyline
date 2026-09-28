@@ -101,6 +101,15 @@ public struct LeylineApp: AinkradApp {
         makeRootView(host: host, mode: .advanced)
     }
 
+    /// Declared, so the host renders this page in the shared settings style.
+    /// Leyline has nothing to set beyond how it opens and looks, and the host
+    /// builds that Appearance tab for every declared page — so this declares
+    /// no groups of its own. `makeSettingsView` stays for older hosts.
+    public static func settingsCatalog(host: HostServices) -> SettingsPage? {
+        SettingsPage(path: SettingsPath([id]), title: displayName, icon: icon,
+                     group: .installedApps, order: 0, groups: [], appID: id)
+    }
+
     public static func makeSettingsView(host: HostServices) -> AnyView {
         AnyView(LeylineSettingsView(presentation: host.presentation, modeControl: host.mode))
     }
