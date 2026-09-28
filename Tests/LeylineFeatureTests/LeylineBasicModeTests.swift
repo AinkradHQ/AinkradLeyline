@@ -25,6 +25,14 @@ struct LeylineBasicModeTests {
         #expect((LeylineApp.self as Any) as? AinkradAppModes.Type != nil)
     }
 
+    @Test("Settings are a declared page, so the host draws them in the shared style")
+    func settingsAreDeclared() {
+        let page = LeylineApp.settingsCatalog(host: BasicModeHost())
+        #expect(page != nil)
+        // No groups of its own: the host's Appearance tab is the whole page.
+        #expect(page?.groups.isEmpty == true)
+    }
+
     @Test("Both modes build")
     func bothModesBuild() {
         let host = BasicModeHost()
