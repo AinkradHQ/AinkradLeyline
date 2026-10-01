@@ -81,3 +81,25 @@ struct SSHKeyMaterializerLifecycleTests {
         #expect(remaining.isEmpty)
     }
 }
+
+/// 0.1: tests must never touch the real `~/Library/Application Support/Leyline`
+/// directory. This suite fails until `keysDirectory()` redirects under test runs.
+@Suite("SSHKeyMaterializer isolation")
+struct SSHKeyMaterializerIsolationTests {
+    @Test("keysDirectory is never the real one under tests")
+    func keysDirectoryIsNeverTheRealOneUnderTests() throws {
+        let dir = try SSHKeyMaterializer.keysDirectory()
+        let real = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask
+        )[0].appendingPathComponent("Leyline")
+        #expect(
+            !dir.standardizedFileURL.path.hasPrefix(real.standardizedFileURL.path),
+            "keysDirectory points at the real Application Support Leyline dir"
+        )
+        #expect(
+            dir.standardizedFileURL.path.hasPrefix(
+                FileManager.default.temporaryDirectory.standardizedFileURL.path),
+            "keysDirectory is not under the temporary directory"
+        )
+    }
+}
