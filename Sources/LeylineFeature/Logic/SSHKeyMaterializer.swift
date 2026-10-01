@@ -26,10 +26,13 @@ enum SSHKeyMaterializer {
     }
 
     /// `~/Library/Application Support/Leyline/keys`, held at 0700.
+    ///
+    /// Under a test run this redirects to a per-process directory under the
+    /// temporary directory (see `root()`): the test target is unhosted, so no
+    /// sandbox redirects Application Support, and the suite chmods, purges
+    /// and deletes through this function. Tests must never touch real keys.
     static func keysDirectory() throws -> URL {
-        let base = try FileManager.default.url(
-            for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true
-        ).appendingPathComponent("Leyline/keys", isDirectory: true)
+        let base = try root().appendingPathComponent("Leyline/keys", isDirectory: true)
         try FileManager.default.createDirectory(
             at: base, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         // `createDirectory`'s attributes apply only when it actually creates
@@ -91,4 +94,25 @@ private extension FileManager {
     func attributesOfItemPosixPermissions(atPath path: String) -> Int? {
         (try? attributesOfItem(atPath: path))?[.posixPermissions] as? Int
     }
+}
+
+/// The directory `keysDirectory()` builds `Leyline/keys` under.
+///
+/// Tests must never touch the real `~/Library/Application Support/Leyline`
+/// directory: the suite chmods it, purges it and deletes through this path,
+/// and the test target is an unhosted `bundle.unit-test` so no sandbox
+/// container redirects Application Support. Under a test run — detected the
+/// same way the host does in `AppEnvironment.swift` and
+/// `LaunchHomeResolver.swift`, via `XCTestConfigurationFilePath` — return a
+/// per-process directory under the temporary directory instead, so every
+/// caller (`materialize`, `purge`, `purgeAll`, teardown) is redirected through
+/// the one function they all route through. A test written later cannot get
+/// it wrong.
+fileprivate func root() throws -> URL {
+    if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+        return FileManager.default.temporaryDirectory.appendingPathComponent(
+            "LeylineTests-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
+    }
+    return try FileManager.default.url(
+        for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
 }
