@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import AinkradAppKit
 @testable import LeylineFeature
 
 @Suite("LeylineStore")
@@ -69,5 +70,44 @@ struct LeylineStoreTests {
         store.removeConnection(c)
         #expect(store.connections.isEmpty)
         #expect(store.password(for: c) == nil)
+    }
+
+    @Test("corrupt document is set aside, not overwritten")
+    func corruptDocumentIsSetAsideNotOverwritten() {
+        let seed = Data("{not json".utf8)
+        let docs = FakeDocs()
+        docs.setData(seed, forKey: LeylineDocument.documentID)
+        let store = LeylineStore(documents: docs, secrets: FakeSecrets())
+        _ = store.addConnection(label: "c", host: "h", port: 22,
+                                username: "u", authMode: .password, keyID: nil, password: "pw")
+        let backups = docs.storage.keys.filter {
+            $0.hasPrefix("\(LeylineDocument.documentID).corrupt-")
+        }
+        #expect(backups.count == 1, "corrupt bytes were not set aside")
+        #expect(docs.storage[backups.first ?? ""] == seed, "backup does not hold the seed bytes")
+    }
+
+    @Test("unverifiable set-aside keeps the original and stops saving")
+    func unverifiableSetAsideKeepsOriginalAndStopsSaving() {
+        let seed = Data("{not json".utf8)
+        let docs = RejectingCorruptDocs()
+        docs.setData(seed, forKey: LeylineDocument.documentID)
+        let store = LeylineStore(documents: docs, secrets: FakeSecrets())
+        _ = store.addConnection(label: "c", host: "h", port: 22,
+                                username: "u", authMode: .password, keyID: nil, password: "pw")
+        #expect(
+            docs.storage[LeylineDocument.documentID] == seed,
+            "the only copy of the user's data was overwritten")
+    }
+}
+
+/// In-memory document store whose `setData` ignores backup keys, simulating a
+/// failed verification read-back after the set-aside write.
+final class RejectingCorruptDocs: PluginDocumentStore {
+    var storage: [String: Data] = [:]
+    func data(forKey key: String) -> Data? { storage[key] }
+    func setData(_ data: Data?, forKey key: String) {
+        if key.contains(".corrupt-") { return }
+        storage[key] = data
     }
 }
