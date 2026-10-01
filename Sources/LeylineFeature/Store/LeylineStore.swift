@@ -12,20 +12,16 @@ public final class LeylineStore {
     public private(set) var keys: [LeylineKey]
     private let documents: PluginDocumentStore
     private let secrets: PluginSecretStore
+    private var canSave = true
 
     public init(documents: PluginDocumentStore, secrets: PluginSecretStore) {
         self.documents = documents
         self.secrets = secrets
-        let doc = Self.load(from: documents)
-        self.connections = doc.connections
-        self.keys = doc.keys
-    }
-
-    private static func load(from documents: PluginDocumentStore) -> LeylineDocument {
-        guard let data = documents.data(forKey: LeylineDocument.documentID),
-              let doc = try? JSONDecoder().decode(LeylineDocument.self, from: data)
-        else { return LeylineDocument() }
-        return doc
+        let loaded = loadDocument(
+            LeylineDocument.self, key: LeylineDocument.documentID, from: documents, app: "leyline")
+        self.connections = loaded.value?.connections ?? []
+        self.keys = loaded.value?.keys ?? []
+        self.canSave = loaded.canSave
     }
 
     // MARK: Keys
@@ -96,7 +92,17 @@ public final class LeylineStore {
     }
 
     private func persist() {
+        guard canSave else {
+            AinkradLog.logger(app: "leyline", area: "persistence")
+                .error("saving is off: the loaded document did not decode and could not be set aside")
+            return
+        }
         let doc = LeylineDocument(connections: connections, keys: keys)
-        documents.setData(try? JSONEncoder().encode(doc), forKey: LeylineDocument.documentID)
+        guard let data = try? JSONEncoder().encode(doc) else {
+            AinkradLog.logger(app: "leyline", area: "persistence")
+                .error("could not encode leyline document; not saving")
+            return
+        }
+        documents.setData(data, forKey: LeylineDocument.documentID)
     }
 }
