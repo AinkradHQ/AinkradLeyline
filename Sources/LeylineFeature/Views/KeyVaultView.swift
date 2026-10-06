@@ -48,9 +48,7 @@ struct KeyVaultView: View {
                 AinkradButton(title: "Done", style: .primary) { onClose() }.keyboardShortcut(.defaultAction)
             }
         }
-        .padding(18)
         .frame(width: 440, height: 380)
-        .background(LeylineHUD.sheetBackground(t))
         .foregroundStyle(t.foreground)
         .ainkradModal(isPresented: $showingPaste) { pasteModalContent }
     }
@@ -110,7 +108,6 @@ struct KeyVaultView: View {
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(18)
         .frame(width: 400)
         .foregroundStyle(t.foreground)
     }

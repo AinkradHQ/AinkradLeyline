@@ -94,9 +94,7 @@ struct ConnectionEditorView: View {
             }
             .padding(.top, 4)
         }
-        .padding(18)
         .frame(width: 400)
-        .background(LeylineHUD.sheetBackground(t))
         .foregroundStyle(t.foreground)
         .onAppear(perform: load)
     }
