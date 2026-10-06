@@ -16,6 +16,7 @@ struct LeylineRootView: View {
     /// discarded: `apps.open` returned Void, so a missing or disabled Rune
     /// looked exactly like a successful launch.
     @State private var launchError: String?
+    @Environment(\.ainkradSkin) private var skin
 
     private var t: HostThemeTokens { theme.tokens }
     private var filtered: [LeylineConnection] { ConnectionFilter.matching(query, in: store.connections) }
@@ -24,11 +25,11 @@ struct LeylineRootView: View {
         VStack(spacing: 0) {
             header
             AinkradSearchField(text: $query, placeholder: "Search connections")
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
+                .padding(.horizontal, skin.size.s14)
+                .padding(.bottom, skin.size.s10)
             if let launchError {
                 AinkradBanner(message: launchError, status: .warning, onDismiss: { self.launchError = nil })
-                    .padding(.horizontal, 14).padding(.top, 8)
+                    .padding(.horizontal, skin.size.s14).padding(.top, AinkradSpacing.sm)
             }
             content
         }
@@ -57,21 +58,21 @@ struct LeylineRootView: View {
     // MARK: Header (wordmark + HUD actions)
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: skin.size.s10) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.system(size: 15, weight: .semibold))
+                .font(skin.font(AinkradFontToken(sizeKey: "t15", weight: "semibold")))
                 .foregroundStyle(t.accentSecondary)
-                .shadow(color: t.accentSecondary.opacity(0.5), radius: 5)
+                .shadow(color: t.accentSecondary.opacity(skin.opacity.o50), radius: skin.size.s5)
             Text("LEYLINE")
-                .font(.system(size: 12, weight: .bold, design: .monospaced)).kerning(3)
-                .foregroundStyle(t.foreground.opacity(0.85))
+                .font(skin.font(AinkradFontToken(sizeKey: "t12", weight: "bold", mono: "system"))).kerning(3)
+                .foregroundStyle(t.foreground.opacity(skin.opacity.o85))
             Spacer()
             AinkradIconButton(systemName: "key.fill", tooltip: "SSH Keys") { showingKeys = true }
             AinkradIconButton(systemName: "plus", tooltip: "New Connection") { showingNew = true }
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.horizontal, skin.size.s14)
+        .padding(.top, skin.size.s14)
+        .padding(.bottom, AinkradSpacing.md)
     }
 
     // MARK: Content
@@ -81,11 +82,11 @@ struct LeylineRootView: View {
             emptyState
         } else {
             ScrollView {
-                VStack(spacing: 2) {
+                VStack(spacing: skin.size.s2) {
                     ForEach(filtered) { conn in row(conn) }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 10)
+                .padding(.horizontal, AinkradSpacing.sm)
+                .padding(.vertical, skin.size.s10)
             }
         }
     }
@@ -107,17 +108,19 @@ struct LeylineRootView: View {
             isSelected: isHover,
             leading: {
                 Image(systemName: conn.authMode == .key ? "key.fill" : "lock.fill")  // auth badge
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
                     .foregroundStyle(authColor)
-                    .frame(width: 24, height: 24)
-                    .background(ChamferShape(cut: AinkradRadius.sm).fill(authColor.opacity(0.14)))
-                    .overlay(ChamferShape(cut: AinkradRadius.sm).strokeBorder(authColor.opacity(0.3), lineWidth: 0.5))
+                    .frame(width: skin.size.s24, height: skin.size.s24)
+                    .background(ChamferShape(cut: AinkradRadius.sm).fill(authColor.opacity(skin.opacity.o14)))
+                    .overlay(
+                        ChamferShape(cut: AinkradRadius.sm).strokeBorder(
+                            authColor.opacity(skin.opacity.o30), lineWidth: 0.5))
             },
             title: conn.label.isEmpty ? conn.host : conn.label,
             subtitle: SSHCommand.string(for: conn),
             trailing: {
-                HStack(spacing: 6) {
-                    HStack(spacing: 6) {  // hover-revealed secondary actions
+                HStack(spacing: skin.size.s6) {
+                    HStack(spacing: skin.size.s6) {  // hover-revealed secondary actions
                         AinkradIconButton(
                             systemName: copied == conn.id ? "checkmark" : "doc.on.doc", tooltip: "Copy ssh command"
                         ) {

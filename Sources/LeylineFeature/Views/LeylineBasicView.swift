@@ -23,6 +23,7 @@ struct LeylineBasicView: View {
 
     @State private var query = ""
     @State private var launchError: String?
+    @Environment(\.ainkradSkin) private var skin
 
     private var t: HostThemeTokens { theme.tokens }
     private var filtered: [LeylineConnection] { ConnectionFilter.matching(query, in: store.connections) }
@@ -60,7 +61,7 @@ struct LeylineBasicView: View {
                     : "Try a different search")
         } else {
             ScrollView {
-                VStack(spacing: 2) {
+                VStack(spacing: skin.size.s2) {
                     ForEach(filtered) { conn in row(conn) }
                 }
             }
@@ -75,9 +76,9 @@ struct LeylineBasicView: View {
             isSelected: false,
             leading: {
                 Image(systemName: conn.authMode == .key ? "key.fill" : "lock.fill")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
                     .foregroundStyle(conn.authMode == .key ? t.accentTertiary : t.accentSecondary)
-                    .frame(width: 24, height: 24)
+                    .frame(width: skin.size.s24, height: skin.size.s24)
             },
             title: conn.label.isEmpty ? conn.host : conn.label,
             subtitle: SSHCommand.string(for: conn),
