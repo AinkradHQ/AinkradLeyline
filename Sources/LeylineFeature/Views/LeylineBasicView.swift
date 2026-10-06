@@ -43,7 +43,6 @@ struct LeylineBasicView: View {
                 content
             }
         }
-        .background(Color.clear)
     }
 
     private var subtitle: String {

@@ -38,6 +38,26 @@ enum SSHIdentityResolution: Equatable {
         if case .identity(let identity) = self { return identity.path }
         return nil
     }
+
+    /// Why a key connection can't hand ssh a key, in the one wording `connect`
+    /// and the host bridge both use; nil for `.identity` and `.passwordAuth`.
+    /// A materialization failure's underlying error names the file, so it is
+    /// deliberately not described. See `MaterializedIdentity`.
+    func keyFailureMessage(label: String) -> String? {
+        switch self {
+        case .identity, .passwordAuth:
+            return nil
+        case .noKeySelected:
+            return "Connection \"\(label)\" uses key authentication but has no key selected. "
+                + "Pick one in the Leyline app, then try again."
+        case .keyUnavailable:
+            return "Connection \"\(label)\" uses key authentication but its key is no longer in "
+                + "Leyline's vault. Re-import it in the Leyline app."
+        case .materializationFailed:
+            return "Couldn't connect to \(label): Leyline could not write a protected copy of its key "
+                + "for ssh to read."
+        }
+    }
 }
 
 /// Turns a connection into the `-i` argument `ssh` needs — **the single

@@ -184,12 +184,12 @@ enum LeylineMCPServer {
         guard let data = arguments.data(using: .utf8),
             var object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         else {
-            return AgentActionResult(text: "\(tool.name): malformed arguments", isError: true)
+            return .failure("\(tool.name): malformed arguments")
         }
 
         object["operation"] = tool.operation
         guard let payload = try? JSONSerialization.data(withJSONObject: object) else {
-            return AgentActionResult(text: "\(tool.name): could not encode the request", isError: true)
+            return .failure("\(tool.name): could not encode the request")
         }
         return await perform(String(decoding: payload, as: UTF8.self))
     }

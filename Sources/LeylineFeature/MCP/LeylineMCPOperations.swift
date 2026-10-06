@@ -179,24 +179,7 @@ struct LeylineMCPOperations {
         // to "try ssh-agent and hope": a connect that opens Rune and then
         // says Permission denied is the bug this replaces.
         let resolution = catalog.identity(conn)
-        switch resolution {
-        case .identity, .passwordAuth:
-            break
-        case .noKeySelected:
-            return .failure(
-                "Connection \"\(label(conn))\" uses key authentication but has no key "
-                    + "selected. Pick one in the Leyline app, then try again.")
-        case .keyUnavailable:
-            return .failure(
-                "Connection \"\(label(conn))\" uses key authentication but its key is "
-                    + "no longer in Leyline's vault. Re-import it in the Leyline app.")
-        case .materializationFailed:
-            // The underlying error names the file; it is deliberately not
-            // described here. See `MaterializedIdentity`.
-            return .failure(
-                "Couldn't connect to \(label(conn)): Leyline could not write a "
-                    + "protected copy of its key for ssh to read.")
-        }
+        if let message = resolution.keyFailureMessage(label: label(conn)) { return .failure(message) }
         // `resolution.path` is the ONLY read of the materialized path in this
         // file, and it goes straight into the payload Rune receives — a
         // channel the model never sees.
@@ -257,9 +240,4 @@ struct LeylineMCPOperations {
     private func label(_ conn: LeylineConnection) -> String {
         conn.label.isEmpty ? conn.host : conn.label
     }
-}
-
-extension AgentActionResult {
-    fileprivate static func success(_ text: String) -> AgentActionResult { .init(text: text, isError: false) }
-    fileprivate static func failure(_ text: String) -> AgentActionResult { .init(text: text, isError: true) }
 }

@@ -39,7 +39,6 @@ struct LeylineRootView: View {
             }
             content
         }
-        .background(Color.clear)  // let the host HUD panel blur show through
         // In-surface HUD overlays (chamfer + dim + scrim/Esc dismiss), scoped
         // to this root view — never a native `.sheet`. The `editing` modal is
         // driven by the item's presence; `editing` itself stays available to

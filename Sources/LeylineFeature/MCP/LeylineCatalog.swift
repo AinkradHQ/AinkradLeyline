@@ -95,18 +95,7 @@ struct LeylineCatalog {
     init(store: LeylineStore, launcher: PluginAppLauncher) {
         self.connections = { store.connections }
         self.keys = { store.keys }
-        self.launch = { payload in
-            // `openReportingOutcome` is the opt-in richer launcher, discovered
-            // by dynamic cast. On a host that predates it, fall back to the
-            // Void-returning `open` — which cannot distinguish success from a
-            // missing Rune, so it must report `.opened` optimistically.
-            // The UI's connect button makes the same trade in `LeylineRootView`.
-            if let reporting = launcher as? PluginAppLauncherResult {
-                return reporting.openReportingOutcome(appID: "rune", payload: payload.json)
-            }
-            launcher.open(appID: "rune", payload: payload.json)
-            return .opened
-        }
+        self.launch = { LeylineConnectAction.launch($0, with: launcher) }
         self.identity = { conn in SSHIdentityResolver.resolve(conn, store: store) }
     }
 }

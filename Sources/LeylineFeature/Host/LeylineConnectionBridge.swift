@@ -120,20 +120,10 @@ struct LeylineConnectionBridge {
                     + "connect tool instead.")
         }
 
-        switch identity(conn) {
-        case .identity(let materialized):
-            let info: [String: Any] = [
-                "host": conn.host,
-                "user": conn.username,
-                "port": conn.port,
-                "identityPath": materialized.path,
-            ]
-            guard let encoded = try? JSONSerialization.data(withJSONObject: info) else {
-                return .failure("\(Self.actionID): could not encode the connection.")
-            }
-            return .success(String(decoding: encoded, as: UTF8.self))
-
-        case .passwordAuth:
+        let resolution = identity(conn)
+        if let message = resolution.keyFailureMessage(label: label(conn)) { return .failure(message) }
+        guard case .identity(let materialized) = resolution else {
+            // Only `.passwordAuth` is left once the key failures are answered.
             return .failure(
                 "Connection \"\(label(conn))\" authenticates with a password, and background "
                     + "execution runs ssh with BatchMode=yes — which disables every interactive "
@@ -141,28 +131,20 @@ struct LeylineConnectionBridge {
                     + "cannot be used for background commands at all. Attach an SSH key to this "
                     + "connection in the Leyline app, or open an interactive terminal session in Rune with "
                     + "the connect tool instead.")
-
-        case .noKeySelected:
-            return .failure(
-                "Connection \"\(label(conn))\" uses key authentication but has no key "
-                    + "selected. Pick one in the Leyline app.")
-        case .keyUnavailable:
-            return .failure(
-                "Connection \"\(label(conn))\" uses key authentication but its key is "
-                    + "no longer in Leyline's vault. Re-import it in the Leyline app.")
-        case .materializationFailed:
-            return .failure(
-                "Connection \"\(label(conn))\": Leyline could not write a protected "
-                    + "copy of its key for ssh to read.")
         }
+        let info: [String: Any] = [
+            "host": conn.host,
+            "user": conn.username,
+            "port": conn.port,
+            "identityPath": materialized.path,
+        ]
+        guard let encoded = try? JSONSerialization.data(withJSONObject: info) else {
+            return .failure("\(Self.actionID): could not encode the connection.")
+        }
+        return .success(String(decoding: encoded, as: UTF8.self))
     }
 
     private func label(_ conn: LeylineConnection) -> String {
         conn.label.isEmpty ? conn.host : conn.label
     }
-}
-
-extension AgentActionResult {
-    fileprivate static func success(_ text: String) -> AgentActionResult { .init(text: text, isError: false) }
-    fileprivate static func failure(_ text: String) -> AgentActionResult { .init(text: text, isError: true) }
 }

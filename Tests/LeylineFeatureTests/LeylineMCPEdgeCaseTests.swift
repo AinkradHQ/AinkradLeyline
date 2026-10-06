@@ -103,6 +103,25 @@ struct LeylineMCPEdgeCaseTests {
         }
     }
 
+    @Test("connect and the host bridge give a key connection's failure in one wording")
+    func keyFailureWordingIsShared() async throws {
+        let fixture = makeMCPFixture()
+        let noKey = fixture.store.addConnection(
+            label: "No key", host: "nokey.example.com", port: 22, username: "u", authMode: .key, keyID: nil,
+            password: nil)
+        let (server, _) = makeServer(store: fixture.store, launcher: FakeLauncher())
+        let viaConnect = try await call(server, "connect", ["connection": noKey.id.uuidString])
+        let store = fixture.store
+        let bridge = LeylineConnectionBridge(
+            connections: { store.connections }, keys: { store.keys },
+            identity: { SSHIdentityResolver.resolve($0, store: store) })
+        let viaBridge = bridge.resolve(#"{"connection":"\#(noKey.id.uuidString)"}"#)
+        let expected = SSHIdentityResolution.noKeySelected.keyFailureMessage(label: "No key")
+        #expect(viaConnect.isError && viaBridge.isError)
+        #expect(viaConnect.text == expected)
+        #expect(viaBridge.text == expected)
+    }
+
     @Test("malformed arguments are rejected without reaching the sink")
     func malformedArguments() async throws {
         var reached = false
