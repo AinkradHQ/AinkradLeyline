@@ -157,6 +157,7 @@ struct KeyVaultView: View {
             importError = nil
             store.importKey(label: url.lastPathComponent, privateKey: body, passphrase: nil)
         case .failure(let e):
+            Log.keys.error("key file import failed: \(e.message)")
             importError = e.message
         }
     }

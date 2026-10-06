@@ -62,12 +62,14 @@ enum SSHIdentityResolver {
         guard let key = store.keys.first(where: { $0.id == keyID }),
             let material = store.privateKey(for: key)
         else { return .keyUnavailable }
-        // `materialize` throws rather than shipping a key it could not protect;
-        // the thrown error carries the path, so it is swallowed rather than
-        // described.
-        guard let path = try? store.materialize(keyID: keyID, privateKey: material) else {
+        // `materialize` throws rather than shipping a key it could not protect.
+        // The thrown error carries the path, so it never reaches the result:
+        // it is logged at the default private privacy and nowhere else.
+        do {
+            return .identity(MaterializedIdentity(path: try store.materialize(keyID: keyID, privateKey: material)))
+        } catch {
+            Log.keys.error("could not materialize key \(keyID, privacy: .public): \(error)")
             return .materializationFailed
         }
-        return .identity(MaterializedIdentity(path: path))
     }
 }

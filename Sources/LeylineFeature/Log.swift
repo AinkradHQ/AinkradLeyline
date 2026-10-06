@@ -1,15 +1,12 @@
+import AinkradAppKit
 import os
 
-/// This repo's `os.Logger` categories, all under the shared Ainkrad
-/// subsystem so a user's whole install filters as one stream in Console.app.
+/// The module's loggers, one per area, all under the shared Ainkrad subsystem
+/// (`AinkradLog`) so a single Console filter covers the host and Leyline.
 ///
-/// The subsystem is spelled out here rather than taken from the SDK's
-/// `AinkradLog` because this repo's AinkradAppKit pin (6cd1599) predates
-/// that type. Switch to `AinkradLog.logger(app:area:)` whenever this pin
-/// next moves forward.
+/// Interpolated errors keep the default private privacy: a key error can name
+/// the path of a plaintext private key.
 enum Log {
-    private static let subsystem = "com.ainkrad.app"
-    static let ssh = Logger(subsystem: subsystem, category: "leyline.ssh")
-    static let keys = Logger(subsystem: subsystem, category: "leyline.keys")
-    static let vault = Logger(subsystem: subsystem, category: "leyline.vault")
+    static let persistence = AinkradLog.logger(app: "leyline", area: "persistence")
+    static let keys = AinkradLog.logger(app: "leyline", area: "keys")
 }
