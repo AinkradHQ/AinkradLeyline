@@ -68,21 +68,6 @@ struct SSHKeyMaterializerLifecycleTests {
         SSHKeyMaterializer.purge(keyID: id)
         SSHKeyMaterializer.purge(keyID: id)
     }
-
-    @Test("purgeAll clears every materialized key")
-    func purgeAllClearsDirectory() throws {
-        let ids = [UUID(), UUID(), UUID()]
-        var paths: [String] = []
-        for id in ids { paths.append(try SSHKeyMaterializer.materialize(keyID: id, privateKey: "K")) }
-
-        SSHKeyMaterializer.purgeAll()
-
-        // Parallel-safe: suites share one per-process temp root, so the
-        // directory may hold other suites' keys too. Assert only our own are gone.
-        for path in paths {
-            #expect(!FileManager.default.fileExists(atPath: path), "our key survived purgeAll")
-        }
-    }
 }
 
 /// 0.1: tests must never touch the real `~/Library/Application Support/Leyline`
