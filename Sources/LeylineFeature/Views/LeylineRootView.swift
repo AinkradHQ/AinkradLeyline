@@ -66,8 +66,8 @@ struct LeylineRootView: View {
                 .font(.system(size: 12, weight: .bold, design: .monospaced)).kerning(3)
                 .foregroundStyle(t.foreground.opacity(0.85))
             Spacer()
-            AinkradIconButton(systemName: "key.fill") { showingKeys = true }.help("SSH Keys")
-            AinkradIconButton(systemName: "plus") { showingNew = true }.help("New Connection")
+            AinkradIconButton(systemName: "key.fill", tooltip: "SSH Keys") { showingKeys = true }
+            AinkradIconButton(systemName: "plus", tooltip: "New Connection") { showingNew = true }
         }
         .padding(.horizontal, 14)
         .padding(.top, 14)
@@ -118,12 +118,13 @@ struct LeylineRootView: View {
             trailing: {
                 HStack(spacing: 6) {
                     HStack(spacing: 6) {  // hover-revealed secondary actions
-                        AinkradIconButton(systemName: copied == conn.id ? "checkmark" : "doc.on.doc") {
+                        AinkradIconButton(
+                            systemName: copied == conn.id ? "checkmark" : "doc.on.doc", tooltip: "Copy ssh command"
+                        ) {
                             copyCommand(conn)
                         }
-                        .help("Copy ssh command")
-                        AinkradIconButton(systemName: "pencil") { editing = conn }.help("Edit")
-                        AinkradIconButton(systemName: "trash") { store.removeConnection(conn) }.help("Delete")
+                        AinkradIconButton(systemName: "pencil", tooltip: "Edit") { editing = conn }
+                        AinkradIconButton(systemName: "trash", tooltip: "Delete") { store.removeConnection(conn) }
                     }
                     .opacity(isHover ? 1 : 0)
                     .allowsHitTesting(isHover)

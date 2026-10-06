@@ -68,8 +68,7 @@ struct KeyVaultView: View {
             title: key.label,
             subtitle: key.hasPassphrase ? "Passphrase-protected" : nil,
             trailing: {
-                AinkradIconButton(systemName: "trash") { store.removeKey(key) }
-                    .help("Delete key")
+                AinkradIconButton(systemName: "trash", tooltip: "Delete key") { store.removeKey(key) }
                     .opacity(isHover ? 1 : 0)
                     .allowsHitTesting(isHover)
             }
