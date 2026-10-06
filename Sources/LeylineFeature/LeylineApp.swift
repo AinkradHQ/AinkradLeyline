@@ -30,7 +30,7 @@ public struct LeylineApp: AinkradApp {
     }
     @MainActor private static var legacyIDs: [ObjectIdentifier: PluginInstanceID] = [:]
 
-    @MainActor private static func store(for host: HostServices) -> LeylineStore {
+    @MainActor static func store(for host: HostServices) -> LeylineStore {
         stores.value(for: instance(of: host)) {
             LeylineStore(documents: host.documents, secrets: host.secrets)
         }
@@ -138,10 +138,12 @@ extension LeylineApp: AinkradAppMCP {
 /// the system `ssh` binary can read them. Without a teardown hook they simply
 /// stayed there — the audit's "materialized private keys written to disk in
 /// plaintext, never deleted". Removing the key from the vault now purges its
-/// copy (Wave 2); closing the app purges all of them.
+/// copy (Wave 2); closing the app purges the ones it wrote.
 extension LeylineApp: AinkradAppTeardown {
     public static func teardown(instance: PluginInstanceID) {
-        stores.remove(instance)
+        // Purge only the keys this instance materialized: the keys directory
+        // is shared with every other running Leyline host.
+        stores.remove(instance)?.purgeMaterializedKeys()
         // The MCP server's tool closures capture the catalog, which captures
         // this instance's store. Leaving it registered would keep a closed
         // instance's connection list alive for the rest of the process and let
@@ -153,7 +155,6 @@ extension LeylineApp: AinkradAppTeardown {
         if let registration = actionTokens.remove(instance) {
             registration.provider.remove(registration.token)
         }
-        SSHKeyMaterializer.purgeAll()
     }
 }
 

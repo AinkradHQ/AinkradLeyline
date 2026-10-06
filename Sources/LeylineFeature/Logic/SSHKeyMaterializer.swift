@@ -79,15 +79,6 @@ enum SSHKeyMaterializer {
         guard let base = try? keysDirectory() else { return }
         try? FileManager.default.removeItem(at: base.appendingPathComponent(keyID.uuidString))
     }
-
-    /// Removes every materialized key, so plaintext key material does not
-    /// outlive the session that needed it.
-    static func purgeAll() {
-        guard let base = try? keysDirectory(),
-              let entries = try? FileManager.default.contentsOfDirectory(
-                at: base, includingPropertiesForKeys: nil) else { return }
-        for entry in entries { try? FileManager.default.removeItem(at: entry) }
-    }
 }
 
 private extension FileManager {
@@ -105,7 +96,7 @@ private extension FileManager {
 /// same way the host does in `AppEnvironment.swift` and
 /// `LaunchHomeResolver.swift`, via `XCTestConfigurationFilePath` — return a
 /// per-process directory under the temporary directory instead, so every
-/// caller (`materialize`, `purge`, `purgeAll`, teardown) is redirected through
+/// caller (`materialize`, `purge`, teardown) is redirected through
 /// the one function they all route through. A test written later cannot get
 /// it wrong.
 fileprivate func root() throws -> URL {

@@ -64,7 +64,7 @@ enum SSHIdentityResolver {
         // `materialize` throws rather than shipping a key it could not protect;
         // the thrown error carries the path, so it is swallowed rather than
         // described.
-        guard let path = try? SSHKeyMaterializer.materialize(keyID: keyID, privateKey: material) else {
+        guard let path = try? store.materialize(keyID: keyID, privateKey: material) else {
             return .materializationFailed
         }
         return .identity(MaterializedIdentity(path: path))

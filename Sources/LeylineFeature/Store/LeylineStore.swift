@@ -13,6 +13,9 @@ public final class LeylineStore {
     private let documents: PluginDocumentStore
     private let secrets: PluginSecretStore
     private var canSave = true
+    /// Keys THIS instance wrote to the shared keys directory. Every host shares
+    /// that directory, so teardown must purge only these, never the directory.
+    private var materializedKeyIDs: Set<UUID> = []
 
     public init(documents: PluginDocumentStore, secrets: PluginSecretStore) {
         self.documents = documents
@@ -37,6 +40,19 @@ public final class LeylineStore {
         return key
     }
 
+    /// Materializes `keyID` for `ssh` and remembers it for `purgeMaterializedKeys()`.
+    func materialize(keyID: UUID, privateKey: String) throws -> String {
+        let path = try SSHKeyMaterializer.materialize(keyID: keyID, privateKey: privateKey)
+        materializedKeyIDs.insert(keyID)
+        return path
+    }
+
+    /// Deletes the plaintext copies this instance wrote; other instances' files stay.
+    func purgeMaterializedKeys() {
+        for id in materializedKeyIDs { SSHKeyMaterializer.purge(keyID: id) }
+        materializedKeyIDs.removeAll()
+    }
+
     public func privateKey(for key: LeylineKey) -> String? { secrets.secret(forKey: key.privateKeySecretID) }
     public func passphrase(for key: LeylineKey) -> String? { secrets.secret(forKey: key.passphraseSecretID) }
 
@@ -49,6 +65,7 @@ public final class LeylineStore {
         // actual private key on disk indefinitely — the vault showed no key
         // while the key was still there.
         SSHKeyMaterializer.purge(keyID: key.id)
+        materializedKeyIDs.remove(key.id)
         keys.removeAll { $0.id == key.id }
         for i in connections.indices where connections[i].keyID == key.id {
             connections[i].keyID = nil

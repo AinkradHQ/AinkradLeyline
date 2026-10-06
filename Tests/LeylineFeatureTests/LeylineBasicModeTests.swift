@@ -87,7 +87,7 @@ struct LeylineBasicModeTests {
 // MARK: - Fakes
 
 @MainActor
-private final class BasicModeLauncher: PluginAppLauncher, PluginAppLauncherResult {
+final class BasicModeLauncher: PluginAppLauncher, PluginAppLauncherResult {
     struct Open: Equatable { let appID: String; let payload: String? }
     var opened: [Open] = []
     var outcome: PluginLaunchOutcome = .opened
@@ -103,7 +103,8 @@ private final class BasicModeLauncher: PluginAppLauncher, PluginAppLauncherResul
 }
 
 @MainActor
-private final class BasicModeHost: HostServices {
+final class BasicModeHost: HostServices, PluginInstanceIdentity {
+    let instanceID = PluginInstanceID()
     let documents: PluginDocumentStore = FakeDocs()
     let secrets: PluginSecretStore = FakeSecrets()
     let launcher = BasicModeLauncher()
@@ -124,36 +125,36 @@ private final class BasicModeHost: HostServices {
     var signals: PluginSignalEmitter { NoopSignalEmitter() }
 }
 
-private struct FakeLog: PluginLogger {
+struct FakeLog: PluginLogger {
     func info(_ message: String) {}
     func error(_ message: String) {}
 }
-@MainActor private struct FakeContext: PluginContextRegistry {
+@MainActor struct FakeContext: PluginContextRegistry {
     func register(_ source: @escaping @MainActor () -> AgentContextSnapshot?) -> PluginContextToken {
         PluginContextToken()
     }
     func remove(_ token: PluginContextToken) {}
 }
-@MainActor private struct FakeActions: AgentActionProvider {
+@MainActor struct FakeActions: AgentActionProvider {
     func register(actionID: String,
                   handler: @escaping @MainActor (String) async -> AgentActionResult) -> AgentActionToken {
         AgentActionToken()
     }
     func remove(_ token: AgentActionToken) {}
 }
-@MainActor private struct FakePresentation: PluginPresentationControl {
+@MainActor struct FakePresentation: PluginPresentationControl {
     var current: PluginPresentation { .overlay }
     func set(_ presentation: PluginPresentation) {}
     func reset() {}
 }
-@MainActor private struct FakeMode: PluginModeControl {
+@MainActor struct FakeMode: PluginModeControl {
     var current: PluginMode { .basic }
     func set(_ mode: PluginMode) {}
     func reset() {}
 }
 
 @MainActor
-private struct StubOverlaySize: PluginOverlaySizeControl {
+struct StubOverlaySize: PluginOverlaySizeControl {
     var current: PluginOverlaySize { .medium }
     func set(_ size: PluginOverlaySize) {}
     func reset() {}
