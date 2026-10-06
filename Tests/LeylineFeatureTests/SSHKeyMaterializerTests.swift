@@ -106,3 +106,54 @@ struct SSHKeyMaterializerIsolationTests {
         )
     }
 }
+
+/// Every Leyline instance (the daily host, any Debug host) shares one keys
+/// directory, so closing one must purge only the keys it materialized itself.
+@MainActor
+@Suite("Leyline teardown key purge")
+struct LeylineTeardownKeyPurgeTests {
+    /// Imports a key into the instance's store and materializes it the way a connect does.
+    private func materialize(on host: BasicModeHost) throws -> (keyID: UUID, path: String) {
+        let store = LeylineApp.store(for: host)
+        let key = store.importKey(label: "k", privateKey: "PRIVATE-\(UUID())", passphrase: nil)
+        let conn = store.addConnection(label: "c", host: "h", port: 22, username: "u",
+                                       authMode: .key, keyID: key.id, password: nil)
+        let path = try #require(SSHIdentityResolver.resolve(conn, store: store).path)
+        return (key.id, path)
+    }
+
+    @Test("tearing one instance down leaves another instance's key file")
+    func teardownLeavesOtherInstancesKeys() throws {
+        let a = BasicModeHost(), b = BasicModeHost()
+        let keyA = try materialize(on: a), keyB = try materialize(on: b)
+        defer { SSHKeyMaterializer.purge(keyID: keyA.keyID); SSHKeyMaterializer.purge(keyID: keyB.keyID) }
+
+        LeylineApp.teardown(instance: a.instanceID)
+
+        #expect(!FileManager.default.fileExists(atPath: keyA.path), "closing A left A's key on disk")
+        #expect(FileManager.default.fileExists(atPath: keyB.path), "closing A deleted B's live key")
+        LeylineApp.teardown(instance: b.instanceID)
+        #expect(!FileManager.default.fileExists(atPath: keyB.path))
+    }
+
+    @Test("a key materialized by nobody in this instance is left alone")
+    func teardownLeavesUnownedFiles() throws {
+        let a = BasicModeHost()
+        let foreign = UUID()
+        let path = try SSHKeyMaterializer.materialize(keyID: foreign, privateKey: "FOREIGN")
+        defer { SSHKeyMaterializer.purge(keyID: foreign) }
+        _ = LeylineApp.store(for: a)
+        LeylineApp.teardown(instance: a.instanceID)
+        #expect(FileManager.default.fileExists(atPath: path))
+    }
+
+    @Test("deleting a key from the vault still purges its file")
+    func vaultDeleteStillPurges() throws {
+        let a = BasicModeHost()
+        let k = try materialize(on: a)
+        defer { LeylineApp.teardown(instance: a.instanceID) }
+        let store = LeylineApp.store(for: a)
+        store.removeKey(try #require(store.keys.first { $0.id == k.keyID }))
+        #expect(!FileManager.default.fileExists(atPath: k.path))
+    }
+}

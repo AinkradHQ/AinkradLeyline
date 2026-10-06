@@ -30,7 +30,7 @@ public struct LeylineApp: AinkradApp {
     }
     @MainActor private static var legacyIDs: [ObjectIdentifier: PluginInstanceID] = [:]
 
-    @MainActor private static func store(for host: HostServices) -> LeylineStore {
+    @MainActor static func store(for host: HostServices) -> LeylineStore {
         stores.value(for: instance(of: host)) {
             LeylineStore(documents: host.documents, secrets: host.secrets)
         }
