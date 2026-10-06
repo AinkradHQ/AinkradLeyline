@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 /// Leyline's **basic** mode: pick a connection, connect. Nothing else.
 ///
@@ -23,25 +23,27 @@ struct LeylineBasicView: View {
 
     @State private var query = ""
     @State private var launchError: String?
+    @Environment(\.ainkradSkin) private var skin
 
     private var t: HostThemeTokens { theme.tokens }
     private var filtered: [LeylineConnection] { ConnectionFilter.matching(query, in: store.connections) }
 
     var body: some View {
-        AinkradBasicShell(icon: "point.3.connected.trianglepath.dotted",
-                          title: "Leyline",
-                          subtitle: subtitle) {
+        AinkradBasicShell(
+            icon: "point.3.connected.trianglepath.dotted",
+            title: "Leyline",
+            subtitle: subtitle
+        ) {
             VStack(spacing: AinkradSpacing.sm) {
                 if store.connections.count > 5 {
                     AinkradSearchField(text: $query, placeholder: "Search connections")
                 }
                 if let launchError {
-                    errorRow(launchError)
+                    AinkradBanner(message: launchError, status: .warning, onDismiss: { self.launchError = nil })
                 }
                 content
             }
         }
-        .background(Color.clear)
     }
 
     private var subtitle: String {
@@ -59,23 +61,11 @@ struct LeylineBasicView: View {
                     : "Try a different search")
         } else {
             ScrollView {
-                VStack(spacing: 2) {
+                VStack(spacing: skin.size.s2) {
                     ForEach(filtered) { conn in row(conn) }
                 }
             }
         }
-    }
-
-    private func errorRow(_ message: String) -> some View {
-        HStack(spacing: AinkradSpacing.xs) {
-            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
-            Text(message)
-                .font(.system(size: 11))
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            AinkradIconButton(systemName: "xmark", size: 18) { launchError = nil }
-        }
-        .foregroundStyle(t.accentTertiary)
     }
 
     /// No hover-revealed edit/delete/copy — those manage a connection rather
@@ -86,9 +76,9 @@ struct LeylineBasicView: View {
             isSelected: false,
             leading: {
                 Image(systemName: conn.authMode == .key ? "key.fill" : "lock.fill")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
                     .foregroundStyle(conn.authMode == .key ? t.accentTertiary : t.accentSecondary)
-                    .frame(width: 24, height: 24)
+                    .frame(width: skin.size.s24, height: skin.size.s24)
             },
             title: conn.label.isEmpty ? conn.host : conn.label,
             subtitle: SSHCommand.string(for: conn),

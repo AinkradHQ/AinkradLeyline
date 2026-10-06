@@ -39,7 +39,11 @@ enum SSHKeyMaterializer {
         // the directory. A directory left by an older build — or one a user's
         // umask made group-readable — would keep its old mode forever, so
         // re-assert it unconditionally.
-        try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: base.path)
+        do {
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: base.path)
+        } catch {
+            Log.keys.error("could not re-assert 0700 on the keys directory: \(error)")
+        }
         return base
     }
 
@@ -48,18 +52,22 @@ enum SSHKeyMaterializer {
         let url = base.appendingPathComponent(keyID.uuidString)
 
         var body = privateKey
-        if !body.hasSuffix("\n") { body.append("\n") }        // ssh requires a trailing newline
+        if !body.hasSuffix("\n") { body.append("\n") }  // ssh requires a trailing newline
 
         // Create the file EMPTY at 0600, then write into it. `createFile`
         // applies its attributes at creation, so there is no instant at which
         // key material exists under looser permissions.
-        try? FileManager.default.removeItem(at: url)
-        guard FileManager.default.createFile(
-            atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600]) else {
+        removeIfPresent(url)
+        guard
+            FileManager.default.createFile(
+                atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600])
+        else {
             throw MaterializerError.couldNotCreateFile(url.path)
         }
         let handle = try FileHandle(forWritingTo: url)
-        defer { try? handle.close() }
+        defer {
+            do { try handle.close() } catch { Log.keys.error("could not close a materialized key file: \(error)") }
+        }
         try handle.write(contentsOf: Data(body.utf8))
 
         // Verify what actually landed rather than trusting the attribute
@@ -68,7 +76,7 @@ enum SSHKeyMaterializer {
         // error later — and a key we can't protect is deleted, not shipped.
         let mode = FileManager.default.attributesOfItemPosixPermissions(atPath: url.path)
         guard mode == 0o600 else {
-            try? FileManager.default.removeItem(at: url)
+            removeIfPresent(url)
             throw MaterializerError.wrongPermissions(url.path, mode ?? -1)
         }
         return url.path
@@ -76,13 +84,29 @@ enum SSHKeyMaterializer {
 
     /// Removes the materialized copy of one key. Safe to call when absent.
     static func purge(keyID: UUID) {
-        guard let base = try? keysDirectory() else { return }
-        try? FileManager.default.removeItem(at: base.appendingPathComponent(keyID.uuidString))
+        do {
+            removeIfPresent(try keysDirectory().appendingPathComponent(keyID.uuidString))
+        } catch {
+            Log.keys.error("could not open the keys directory to purge \(keyID, privacy: .public): \(error)")
+        }
+    }
+
+    /// Removes one key file. A file that is already gone is the state the
+    /// caller wants; any other failure leaves plaintext key material behind,
+    /// so it is logged.
+    private static func removeIfPresent(_ url: URL) {
+        do {
+            try FileManager.default.removeItem(at: url)
+        } catch CocoaError.fileNoSuchFile {
+            // Already absent.
+        } catch {
+            Log.keys.error("could not remove a materialized key file: \(error)")
+        }
     }
 }
 
-private extension FileManager {
-    func attributesOfItemPosixPermissions(atPath path: String) -> Int? {
+extension FileManager {
+    fileprivate func attributesOfItemPosixPermissions(atPath path: String) -> Int? {
         (try? attributesOfItem(atPath: path))?[.posixPermissions] as? Int
     }
 }
@@ -99,7 +123,7 @@ private extension FileManager {
 /// caller (`materialize`, `purge`, teardown) is redirected through
 /// the one function they all route through. A test written later cannot get
 /// it wrong.
-fileprivate func root() throws -> URL {
+private func root() throws -> URL {
     if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
         return FileManager.default.temporaryDirectory.appendingPathComponent(
             "LeylineTests-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)

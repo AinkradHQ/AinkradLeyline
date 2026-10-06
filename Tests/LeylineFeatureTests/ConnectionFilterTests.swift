@@ -1,14 +1,17 @@
-import Testing
 import Foundation
+import Testing
+
 @testable import LeylineFeature
 
 @Suite("ConnectionFilter")
 struct ConnectionFilterTests {
     private let items = [
-        LeylineConnection(id: UUID(), label: "Prod Web", host: "web.acme.io", port: 22,
-                          username: "deploy", authMode: .key, keyID: nil, createdAt: Date()),
-        LeylineConnection(id: UUID(), label: "DB", host: "db.internal", port: 22,
-                          username: "postgres", authMode: .password, keyID: nil, createdAt: Date()),
+        LeylineConnection(
+            id: UUID(), label: "Prod Web", host: "web.acme.io", port: 22,
+            username: "deploy", authMode: .key, keyID: nil, createdAt: Date()),
+        LeylineConnection(
+            id: UUID(), label: "DB", host: "db.internal", port: 22,
+            username: "postgres", authMode: .password, keyID: nil, createdAt: Date()),
     ]
 
     @Test("empty query returns everything")

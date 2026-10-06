@@ -38,6 +38,26 @@ enum SSHIdentityResolution: Equatable {
         if case .identity(let identity) = self { return identity.path }
         return nil
     }
+
+    /// Why a key connection can't hand ssh a key, in the one wording `connect`
+    /// and the host bridge both use; nil for `.identity` and `.passwordAuth`.
+    /// A materialization failure's underlying error names the file, so it is
+    /// deliberately not described. See `MaterializedIdentity`.
+    func keyFailureMessage(label: String) -> String? {
+        switch self {
+        case .identity, .passwordAuth:
+            return nil
+        case .noKeySelected:
+            return "Connection \"\(label)\" uses key authentication but has no key selected. "
+                + "Pick one in the Leyline app, then try again."
+        case .keyUnavailable:
+            return "Connection \"\(label)\" uses key authentication but its key is no longer in "
+                + "Leyline's vault. Re-import it in the Leyline app."
+        case .materializationFailed:
+            return "Couldn't connect to \(label): Leyline could not write a protected copy of its key "
+                + "for ssh to read."
+        }
+    }
 }
 
 /// Turns a connection into the `-i` argument `ssh` needs — **the single
@@ -60,13 +80,16 @@ enum SSHIdentityResolver {
         guard conn.authMode == .key else { return .passwordAuth }
         guard let keyID = conn.keyID else { return .noKeySelected }
         guard let key = store.keys.first(where: { $0.id == keyID }),
-              let material = store.privateKey(for: key) else { return .keyUnavailable }
-        // `materialize` throws rather than shipping a key it could not protect;
-        // the thrown error carries the path, so it is swallowed rather than
-        // described.
-        guard let path = try? store.materialize(keyID: keyID, privateKey: material) else {
+            let material = store.privateKey(for: key)
+        else { return .keyUnavailable }
+        // `materialize` throws rather than shipping a key it could not protect.
+        // The thrown error carries the path, so it never reaches the result:
+        // it is logged at the default private privacy and nowhere else.
+        do {
+            return .identity(MaterializedIdentity(path: try store.materialize(keyID: keyID, privateKey: material)))
+        } catch {
+            Log.keys.error("could not materialize key \(keyID, privacy: .public): \(error)")
             return .materializationFailed
         }
-        return .identity(MaterializedIdentity(path: path))
     }
 }

@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 struct ConnectionEditorView: View {
     @Bindable var store: LeylineStore
@@ -8,6 +8,7 @@ struct ConnectionEditorView: View {
     let onClose: () -> Void
 
     @Environment(\.ainkradTypography) private var typo
+    @Environment(\.ainkradSkin) private var skin
     @State private var label = ""
     @State private var host = ""
     @State private var port = "22"
@@ -46,7 +47,7 @@ struct ConnectionEditorView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: skin.size.s14) {
             Text(existing == nil ? "New Connection" : "Edit Connection")
                 .font(AinkradFontResolver.font(.headline, weight: .semibold, typography: typo))
                 .foregroundStyle(t.foreground)
@@ -54,21 +55,16 @@ struct ConnectionEditorView: View {
             AinkradFormRow(title: "Label") {
                 AinkradTextField(text: $label, placeholder: "Prod Web")
             }
-            HStack(alignment: .bottom, spacing: 10) {
+            HStack(alignment: .bottom, spacing: skin.size.s10) {
                 AinkradFormRow(title: "Host") {
                     AinkradTextField(text: $host, placeholder: "example.com")
                 }
                 AinkradFormRow(title: "Port") {
                     AinkradTextField(text: $port, placeholder: "22")
-                }.frame(width: 110)
+                }.frame(width: skin.size.s110)
             }
             if portValue == nil {
-                HStack(spacing: AinkradSpacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(AinkradFontResolver.font(.caption, typography: typo))
-                    Text(PortField.errorMessage).font(AinkradFontResolver.font(.caption, typography: typo))
-                    Spacer(minLength: 0)
-                }
-                .foregroundStyle(t.accentTertiary)
+                AinkradBanner(message: PortField.errorMessage, status: .danger)
             }
             AinkradFormRow(title: "Username") {
                 AinkradTextField(text: $username, placeholder: "deploy")
@@ -90,41 +86,36 @@ struct ConnectionEditorView: View {
                 }
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: skin.size.s10) {
                 Spacer()
                 AinkradButton(title: "Cancel", style: .ghost) { onClose() }.keyboardShortcut(.cancelAction)
                 AinkradButton(title: "Save", style: .primary, icon: "checkmark") { save() }
                     .disabled(host.isEmpty || portValue == nil)
                     .keyboardShortcut(.defaultAction)
             }
-            .padding(.top, 4)
+            .padding(.top, AinkradSpacing.xs)
         }
-        .padding(18)
-        .frame(width: 400)
-        .background(LeylineHUD.sheetBackground(t))
+        .frame(width: skin.size.s400)
         .foregroundStyle(t.foreground)
         .onAppear(perform: load)
     }
 
     private func load() {
         guard let c = existing else { return }
-        label = c.label; host = c.host; port = String(c.port); username = c.username
-        authMode = c.authMode; keyID = c.keyID
+        label = c.label
+        host = c.host
+        port = String(c.port)
+        username = c.username
+        authMode = c.authMode
+        keyID = c.keyID
         if c.authMode == .password { password = store.password(for: c) ?? "" }
     }
 
     private func save() {
         guard let portValue else { return }
-        if var c = existing {
-            c.label = label; c.host = host; c.port = portValue; c.username = username
-            c.authMode = authMode; c.keyID = authMode == .key ? keyID : nil
-            store.updateConnection(c)
-            store.setPassword(authMode == .password ? password : nil, for: c)
-        } else {
-            store.addConnection(label: label, host: host, port: portValue, username: username,
-                                authMode: authMode, keyID: authMode == .key ? keyID : nil,
-                                password: authMode == .password ? password : nil)
-        }
+        store.saveConnection(
+            existing: existing, label: label, host: host, port: portValue, username: username,
+            authMode: authMode, keyID: keyID, password: password)
         onClose()
     }
 }

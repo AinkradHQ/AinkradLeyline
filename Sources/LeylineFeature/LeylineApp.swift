@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 public struct LeylineApp: AinkradApp {
     public static let id = "leyline"
@@ -104,15 +104,16 @@ public struct LeylineApp: AinkradApp {
     /// Declared, so the host renders this page in the shared settings style.
     /// Leyline has nothing to set beyond how it opens and looks, and the host
     /// builds that Appearance tab for every declared page — so this declares
-    /// no groups of its own. `makeSettingsView` stays for older hosts.
+    /// no groups of its own.
     public static func settingsCatalog(host: HostServices) -> SettingsPage? {
-        SettingsPage(path: SettingsPath([id]), title: displayName, icon: icon,
-                     group: .installedApps, order: 0, groups: [], appID: id)
+        SettingsPage(
+            path: SettingsPath([id]), title: displayName, icon: icon,
+            group: .installedApps, order: 0, groups: [], appID: id)
     }
 
-    public static func makeSettingsView(host: HostServices) -> AnyView {
-        AnyView(LeylineSettingsView(presentation: host.presentation, modeControl: host.mode))
-    }
+    /// Empty: the host draws Leyline's settings from `settingsCatalog`, and
+    /// only falls back to this view when there is no catalog.
+    public static func makeSettingsView(host: HostServices) -> AnyView { AnyView(EmptyView()) }
 
     public static func chromeFill(host: HostServices) -> Color? {
         host.theme.tokens.background

@@ -1,5 +1,5 @@
-import Foundation
 import AinkradAppKit
+import Foundation
 
 /// "Open this connection in Rune" — one implementation, shared by advanced
 /// mode, basic mode, and anything added later.
@@ -14,9 +14,11 @@ import AinkradAppKit
 /// error presentation without this needing to know about either view.
 @MainActor
 enum LeylineConnectAction {
-    static func connect(_ conn: LeylineConnection,
-                        store: LeylineStore,
-                        launcher: PluginAppLauncher) -> String? {
+    static func connect(
+        _ conn: LeylineConnection,
+        store: LeylineStore,
+        launcher: PluginAppLauncher
+    ) -> String? {
         let identityFile = SSHIdentityResolver.resolve(conn, store: store).path
         let payload = SSHLaunchPayload(
             host: conn.host, port: conn.port, username: conn.username, identityFile: identityFile
@@ -31,18 +33,28 @@ enum LeylineConnectAction {
         // Report the outcome instead of discarding it. `open(appID:payload:)`
         // returns Void, so the button looked identical whether Rune opened or
         // was not installed at all.
-        let outcome = (launcher as? PluginAppLauncherResult)?
-            .openReportingOutcome(appID: "rune", payload: safe.json)
-            ?? { launcher.open(appID: "rune", payload: safe.json); return .opened }()
-        switch outcome {
-        case .opened:            return nil
-        case .unknownApp:        return "Rune isn't installed — install it from the App Store."
-        case .disabled:          return "Rune is disabled — enable it in the App Store."
-        case .refused(let why):  return "Couldn't open Rune: \(why)"
+        switch launch(safe, with: launcher) {
+        case .opened: return nil
+        case .unknownApp: return "Rune isn't installed — install it from the App Store."
+        case .disabled: return "Rune is disabled — enable it in the App Store."
+        case .refused(let why): return "Couldn't open Rune: \(why)"
         // `PluginLaunchOutcome` lives in a resilient module, so the compiler
         // requires a default: a newer SDK may add a case this build has never
         // seen. Treat anything unknown as a failure rather than as success.
-        @unknown default:        return "Couldn't open Rune."
+        @unknown default: return "Couldn't open Rune."
         }
+    }
+
+    /// Hands a validated launch to Rune and reports what happened — the one
+    /// launch both the Connect buttons and the MCP `connect` tool use.
+    /// `openReportingOutcome` is the opt-in richer launcher, found by dynamic
+    /// cast. On a host that predates it, fall back to the Void-returning `open`,
+    /// which cannot tell success from a missing Rune, so it reports `.opened`.
+    static func launch(_ payload: SSHLaunchPayload, with launcher: PluginAppLauncher) -> PluginLaunchOutcome {
+        if let reporting = launcher as? PluginAppLauncherResult {
+            return reporting.openReportingOutcome(appID: "rune", payload: payload.json)
+        }
+        launcher.open(appID: "rune", payload: payload.json)
+        return .opened
     }
 }

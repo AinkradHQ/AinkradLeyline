@@ -1,5 +1,5 @@
-import Foundation
 import AinkradAppKit
+import Foundation
 
 /// The sink behind Leyline's MCP tools: decodes one `{"operation": ..., ...}`
 /// payload and answers it from the `LeylineCatalog`.
@@ -49,15 +49,16 @@ struct LeylineMCPOperations {
 
     func run(_ json: String) async -> AgentActionResult {
         guard let data = json.data(using: .utf8),
-              let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-              let operation = object["operation"] as? String else {
+            let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+            let operation = object["operation"] as? String
+        else {
             return .failure("Leyline: malformed request")
         }
         switch operation {
         case "listConnections": return listConnections(object)
-        case "listKeys":        return listKeys()
-        case "connect":         return connect(object)
-        default:                return .failure("Leyline: unknown operation \"\(operation)\"")
+        case "listKeys": return listKeys()
+        case "connect": return connect(object)
+        default: return .failure("Leyline: unknown operation \"\(operation)\"")
         }
     }
 
@@ -81,8 +82,9 @@ struct LeylineMCPOperations {
         guard !matches.isEmpty else {
             // The query is deliberately NOT echoed back — see `connect` below
             // for the reasoning. The caller knows what it asked for.
-            return .success("No saved connection matches that query. "
-                            + "Call list_connections with no query to see all \(all.count).")
+            return .success(
+                "No saved connection matches that query. "
+                    + "Call list_connections with no query to see all \(all.count).")
         }
         let keyLabels = Dictionary(uniqueKeysWithValues: catalog.keys().map { ($0.id, $0.label) })
         let rows = matches.map { conn -> String in
@@ -103,17 +105,21 @@ struct LeylineMCPOperations {
     private func listKeys() -> AgentActionResult {
         let keys = catalog.keys()
         guard !keys.isEmpty else {
-            return .success("Leyline has no imported SSH keys. Import one from the key vault "
-                            + "in the Leyline app (key material cannot be handled from here).")
+            return .success(
+                "Leyline has no imported SSH keys. Import one from the key vault "
+                    + "in the Leyline app (key material cannot be handled from here).")
         }
-        return .success(keys
-            .map { "\($0.id.uuidString)  \($0.label.isEmpty ? "(unlabelled)" : $0.label)" }
-            .joined(separator: "\n"))
+        return .success(
+            keys
+                .map { "\($0.id.uuidString)  \($0.label.isEmpty ? "(unlabelled)" : $0.label)" }
+                .joined(separator: "\n"))
     }
 
     /// A short, secret-free description of how a connection authenticates.
-    private func describeKeyAuth(_ conn: LeylineConnection,
-                                 keyLabels: [UUID: String]) -> String {
+    private func describeKeyAuth(
+        _ conn: LeylineConnection,
+        keyLabels: [UUID: String]
+    ) -> String {
         switch conn.authMode {
         case .password:
             return "password auth"
@@ -127,10 +133,13 @@ struct LeylineMCPOperations {
     // MARK: - connect
 
     private func connect(_ object: [String: Any]) -> AgentActionResult {
-        guard let identifier = (object["connection"] as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines), !identifier.isEmpty else {
-            return .failure("connect requires a \"connection\" (an id or label from "
-                            + "list_connections).")
+        guard
+            let identifier = (object["connection"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !identifier.isEmpty
+        else {
+            return .failure(
+                "connect requires a \"connection\" (an id or label from "
+                    + "list_connections).")
         }
         let all = catalog.connections()
         guard !all.isEmpty else { return .failure(Self.noConnectionsMessage) }
@@ -160,8 +169,9 @@ struct LeylineMCPOperations {
             // caller text also gives a prompt-injection payload a free ride
             // back into the transcript. `LeylineMCPCredentialLeakTests` calls
             // every tool with the seeded secret as its argument and pins this.
-            return .failure("No saved connection has that id or label. "
-                            + "Call list_connections to get the id of the host you mean.")
+            return .failure(
+                "No saved connection has that id or label. "
+                    + "Call list_connections to get the id of the host you mean.")
         }
 
         // Materialize the stored key exactly as the Connect button does. The
@@ -169,32 +179,20 @@ struct LeylineMCPOperations {
         // to "try ssh-agent and hope": a connect that opens Rune and then
         // says Permission denied is the bug this replaces.
         let resolution = catalog.identity(conn)
-        switch resolution {
-        case .identity, .passwordAuth:
-            break
-        case .noKeySelected:
-            return .failure("Connection \"\(label(conn))\" uses key authentication but has no key "
-                            + "selected. Pick one in the Leyline app, then try again.")
-        case .keyUnavailable:
-            return .failure("Connection \"\(label(conn))\" uses key authentication but its key is "
-                            + "no longer in Leyline's vault. Re-import it in the Leyline app.")
-        case .materializationFailed:
-            // The underlying error names the file; it is deliberately not
-            // described here. See `MaterializedIdentity`.
-            return .failure("Couldn't connect to \(label(conn)): Leyline could not write a "
-                            + "protected copy of its key for ssh to read.")
-        }
+        if let message = resolution.keyFailureMessage(label: label(conn)) { return .failure(message) }
         // `resolution.path` is the ONLY read of the materialized path in this
         // file, and it goes straight into the payload Rune receives — a
         // channel the model never sees.
-        let payload = SSHLaunchPayload(host: conn.host, port: conn.port,
-                                       username: conn.username, identityFile: resolution.path)
+        let payload = SSHLaunchPayload(
+            host: conn.host, port: conn.port,
+            username: conn.username, identityFile: resolution.path)
         // Validate before launching. Every field lands in an `ssh` argv, and
         // `ssh`'s option surface (`-o ProxyCommand=…`) runs shell commands, so
         // a hostile hostname is code execution. The same guard the UI applies.
         guard let safe = try? payload.validated() else {
-            return .failure("Connection \"\(label(conn))\" has an unsafe host, username or port "
-                            + "and was not opened. Fix it in the Leyline app.")
+            return .failure(
+                "Connection \"\(label(conn))\" has an unsafe host, username or port "
+                    + "and was not opened. Fix it in the Leyline app.")
         }
 
         // Surface the outcome instead of discarding it, and say what the user
@@ -202,7 +200,8 @@ struct LeylineMCPOperations {
         // connect" with no reason is a dead end for the person reading it.
         switch catalog.launch(safe) {
         case .opened:
-            var text = "Opened a terminal session in Rune to \(label(conn)) "
+            var text =
+                "Opened a terminal session in Rune to \(label(conn)) "
                 + "(\(conn.username.isEmpty ? "" : "\(conn.username)@")\(conn.host):\(conn.port))."
             // Say which credential is in play, without naming where it lives.
             if resolution.path != nil {
@@ -211,34 +210,34 @@ struct LeylineMCPOperations {
                 // Password auth is fine here: a human is sitting at the Rune
                 // window `ssh` is about to prompt in. (It is NOT fine for
                 // background execution — see `LeylineConnectionBridge`.)
-                text += " This connection uses password authentication, so Rune will prompt "
+                text +=
+                    " This connection uses password authentication, so Rune will prompt "
                     + "for the password."
             }
             return .success(text)
         case .unknownApp:
-            return .failure("Couldn't connect to \(label(conn)): the Rune app isn't installed. "
-                            + "Install it from Ainkrad's App Store, then try again.")
+            return .failure(
+                "Couldn't connect to \(label(conn)): the Rune app isn't installed. "
+                    + "Install it from Ainkrad's App Store, then try again.")
         case .disabled:
-            return .failure("Couldn't connect to \(label(conn)): the Rune app is disabled. "
-                            + "Enable it in Ainkrad's App Store, then try again.")
+            return .failure(
+                "Couldn't connect to \(label(conn)): the Rune app is disabled. "
+                    + "Enable it in Ainkrad's App Store, then try again.")
         case .refused(let why):
-            return .failure("Couldn't connect to \(label(conn)): the host refused to open "
-                            + "Rune — \(why)")
+            return .failure(
+                "Couldn't connect to \(label(conn)): the host refused to open "
+                    + "Rune — \(why)")
         // `PluginLaunchOutcome` lives in a resilient module, so a newer SDK may
         // add a case this build has never seen. Treat unknown as FAILURE: a
         // false "connected" is worse than a false "didn't".
         @unknown default:
-            return .failure("Couldn't connect to \(label(conn)): the host reported an "
-                            + "unrecognised launch outcome.")
+            return .failure(
+                "Couldn't connect to \(label(conn)): the host reported an "
+                    + "unrecognised launch outcome.")
         }
     }
 
     private func label(_ conn: LeylineConnection) -> String {
         conn.label.isEmpty ? conn.host : conn.label
     }
-}
-
-private extension AgentActionResult {
-    static func success(_ text: String) -> AgentActionResult { .init(text: text, isError: false) }
-    static func failure(_ text: String) -> AgentActionResult { .init(text: text, isError: true) }
 }

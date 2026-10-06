@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 struct KeyVaultView: View {
     @Bindable var store: LeylineStore
@@ -7,6 +7,7 @@ struct KeyVaultView: View {
     let onClose: () -> Void
 
     @Environment(\.ainkradTypography) private var typo
+    @Environment(\.ainkradSkin) private var skin
     @State private var showingPaste = false
     @State private var pasteLabel = ""
     @State private var pasteBody = ""
@@ -17,7 +18,7 @@ struct KeyVaultView: View {
     private var t: HostThemeTokens { theme.tokens }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AinkradSpacing.md) {
             HStack {
                 Text("SSH Keys")
                     .font(AinkradFontResolver.font(.headline, weight: .semibold, typography: typo))
@@ -26,26 +27,19 @@ struct KeyVaultView: View {
                 AinkradButton(title: "Import File", style: .secondary, icon: "folder") { presentImportPanel() }
                 AinkradButton(title: "Paste", style: .secondary, icon: "doc.on.clipboard") { showingPaste = true }
             }
-            LeylineHUD.glowRule(t)
 
             if let importError {
-                HStack(spacing: AinkradSpacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(AinkradFontResolver.font(.caption, typography: typo))
-                    Text(importError).font(AinkradFontResolver.font(.caption, typography: typo)).fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    AinkradIconButton(systemName: "xmark", size: 18) { self.importError = nil }
-                }
-                .foregroundStyle(t.accentTertiary)
+                AinkradBanner(message: importError, status: .danger, onDismiss: { self.importError = nil })
             }
 
             if store.keys.isEmpty {
                 emptyKeys
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 2) {
+                    LazyVStack(spacing: skin.size.s2) {
                         ForEach(store.keys) { key in keyRow(key) }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, AinkradSpacing.xs)
                 }
             }
 
@@ -54,9 +48,7 @@ struct KeyVaultView: View {
                 AinkradButton(title: "Done", style: .primary) { onClose() }.keyboardShortcut(.defaultAction)
             }
         }
-        .padding(18)
-        .frame(width: 440, height: 380)
-        .background(LeylineHUD.sheetBackground(t))
+        .frame(width: skin.size.s440, height: skin.size.s380)
         .foregroundStyle(t.foreground)
         .ainkradModal(isPresented: $showingPaste) { pasteModalContent }
     }
@@ -67,17 +59,18 @@ struct KeyVaultView: View {
             isSelected: isHover,
             leading: {
                 Image(systemName: "key.fill")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
                     .foregroundStyle(t.accentTertiary)
-                    .frame(width: 24, height: 24)
-                    .background(ChamferShape(cut: AinkradRadius.sm).fill(t.accentTertiary.opacity(0.14)))
-                    .overlay(ChamferShape(cut: AinkradRadius.sm).strokeBorder(t.accentTertiary.opacity(0.3), lineWidth: 0.5))
+                    .frame(width: skin.size.s24, height: skin.size.s24)
+                    .background(ChamferShape(cut: AinkradRadius.sm).fill(t.accentTertiary.opacity(skin.opacity.o14)))
+                    .overlay(
+                        ChamferShape(cut: AinkradRadius.sm).strokeBorder(
+                            t.accentTertiary.opacity(skin.opacity.o30), lineWidth: 0.5))
             },
             title: key.label,
             subtitle: key.hasPassphrase ? "Passphrase-protected" : nil,
             trailing: {
-                AinkradIconButton(systemName: "trash") { store.removeKey(key) }
-                    .help("Delete key")
+                AinkradIconButton(systemName: "trash", tooltip: "Delete key") { store.removeKey(key) }
                     .opacity(isHover ? 1 : 0)
                     .allowsHitTesting(isHover)
             }
@@ -94,7 +87,7 @@ struct KeyVaultView: View {
     }
 
     private var pasteModalContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AinkradSpacing.md) {
             Text("Paste Private Key")
                 .font(AinkradFontResolver.font(.headline, weight: .semibold, typography: typo))
                 .foregroundStyle(t.foreground)
@@ -107,7 +100,7 @@ struct KeyVaultView: View {
             AinkradFormRow(title: "Passphrase (optional)") {
                 AinkradSecureField(text: $pastePassphrase, placeholder: "")
             }
-            HStack(spacing: 10) {
+            HStack(spacing: skin.size.s10) {
                 Spacer()
                 AinkradButton(title: "Cancel", style: .ghost) { showingPaste = false }.keyboardShortcut(.cancelAction)
                 AinkradButton(title: "Import", style: .primary, icon: "checkmark") { importPasted() }
@@ -115,16 +108,19 @@ struct KeyVaultView: View {
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(18)
-        .frame(width: 400)
+        .frame(width: skin.size.s400)
         .foregroundStyle(t.foreground)
     }
 
     private func importPasted() {
-        store.importKey(label: pasteLabel.isEmpty ? "Imported Key" : pasteLabel,
-                        privateKey: pasteBody,
-                        passphrase: pastePassphrase.isEmpty ? nil : pastePassphrase)
-        pasteLabel = ""; pasteBody = ""; pastePassphrase = ""; showingPaste = false
+        store.importKey(
+            label: pasteLabel.isEmpty ? "Imported Key" : pasteLabel,
+            privateKey: pasteBody,
+            passphrase: pastePassphrase.isEmpty ? nil : pastePassphrase)
+        pasteLabel = ""
+        pasteBody = ""
+        pastePassphrase = ""
+        showingPaste = false
     }
 
     /// Uses `NSOpenPanel` (not SwiftUI's `.fileImporter`) so hidden files are
@@ -150,6 +146,7 @@ struct KeyVaultView: View {
             importError = nil
             store.importKey(label: url.lastPathComponent, privateKey: body, passphrase: nil)
         case .failure(let e):
+            Log.keys.error("key file import failed: \(e.message)")
             importError = e.message
         }
     }

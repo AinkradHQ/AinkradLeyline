@@ -1,5 +1,6 @@
-import Foundation
 import AinkradAppKit
+import Foundation
+
 @testable import LeylineFeature
 
 /// In-memory document store: encodes on set, decodes on get — same Codable path as disk.
