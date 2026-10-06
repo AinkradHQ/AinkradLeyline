@@ -9,7 +9,7 @@ struct SSHLaunchPayloadTests {
     @Test("encodes kind=ssh and all fields")
     func encodes() throws {
         let json = SSHLaunchPayload(host: "h", port: 2222, username: "u", identityFile: "/k").json
-        let obj = try JSONSerialization.jsonObject(with: Data(json.utf8)) as! [String: Any]
+        let obj = try #require(try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
         #expect(obj["kind"] as? String == "ssh")
         #expect(obj["host"] as? String == "h")
         #expect(obj["port"] as? Int == 2222)

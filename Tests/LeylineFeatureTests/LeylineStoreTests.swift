@@ -30,20 +30,21 @@ struct LeylineStoreTests {
     }
 
     @Test("password is stored in secrets, never in the document JSON")
-    func passwordNeverInJSON() {
+    func passwordNeverInJSON() throws {
         let docs = FakeDocs()
         let secrets = FakeSecrets()
         let store = LeylineStore(documents: docs, secrets: secrets)
         _ = store.addConnection(
             label: "Prod", host: "h", port: 22,
             username: "u", authMode: .password, keyID: nil, password: "s3cret")
-        let json = String(data: docs.storage[LeylineDocument.documentID]!, encoding: .utf8)!
+        let data = try #require(docs.storage[LeylineDocument.documentID])
+        let json = String(decoding: data, as: UTF8.self)
         #expect(!json.contains("s3cret"))
         #expect(secrets.storage.values.contains("s3cret"))
     }
 
     @Test("importing a key stores material + passphrase in secrets and records hasPassphrase")
-    func importKey() {
+    func importKey() throws {
         let docs = FakeDocs()
         let secrets = FakeSecrets()
         let store = LeylineStore(documents: docs, secrets: secrets)
@@ -51,7 +52,8 @@ struct LeylineStoreTests {
         #expect(k.hasPassphrase)
         #expect(store.privateKey(for: k) == "-----BEGIN-----")
         #expect(store.passphrase(for: k) == "pp")
-        let json = String(data: docs.storage[LeylineDocument.documentID]!, encoding: .utf8)!
+        let data = try #require(docs.storage[LeylineDocument.documentID])
+        let json = String(decoding: data, as: UTF8.self)
         #expect(!json.contains("BEGIN"))
     }
 
