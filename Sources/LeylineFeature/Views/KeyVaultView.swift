@@ -26,7 +26,6 @@ struct KeyVaultView: View {
                 AinkradButton(title: "Import File", style: .secondary, icon: "folder") { presentImportPanel() }
                 AinkradButton(title: "Paste", style: .secondary, icon: "doc.on.clipboard") { showingPaste = true }
             }
-            LeylineHUD.glowRule(t)
 
             if let importError {
                 AinkradBanner(message: importError, status: .danger, onDismiss: { self.importError = nil })

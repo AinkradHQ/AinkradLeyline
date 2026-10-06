@@ -26,7 +26,6 @@ struct LeylineRootView: View {
             AinkradSearchField(text: $query, placeholder: "Search connections")
                 .padding(.horizontal, 14)
                 .padding(.bottom, 10)
-            LeylineHUD.glowRule(t).padding(.horizontal, 14)
             if let launchError {
                 AinkradBanner(message: launchError, status: .warning, onDismiss: { self.launchError = nil })
                     .padding(.horizontal, 14).padding(.top, 8)
