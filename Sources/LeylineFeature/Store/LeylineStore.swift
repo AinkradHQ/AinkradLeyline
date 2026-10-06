@@ -92,6 +92,32 @@ public final class LeylineStore {
         return conn
     }
 
+    /// The connection editor's Save: adds a connection, or edits `existing`.
+    /// A key is kept only for key auth and a password only for password auth,
+    /// so switching an edited connection to key auth clears its stored password.
+    @discardableResult
+    func saveConnection(
+        existing: LeylineConnection?, label: String, host: String, port: Int, username: String,
+        authMode: LeylineConnection.AuthMode, keyID: UUID?, password: String?
+    ) -> LeylineConnection {
+        let keyID = authMode == .key ? keyID : nil
+        let password = authMode == .password ? password : nil
+        guard var conn = existing else {
+            return addConnection(
+                label: label, host: host, port: port, username: username, authMode: authMode, keyID: keyID,
+                password: password)
+        }
+        conn.label = label
+        conn.host = host
+        conn.port = port
+        conn.username = username
+        conn.authMode = authMode
+        conn.keyID = keyID
+        updateConnection(conn)
+        setPassword(password, for: conn)
+        return conn
+    }
+
     public func updateConnection(_ conn: LeylineConnection) {
         guard let idx = connections.firstIndex(where: { $0.id == conn.id }) else { return }
         connections[idx] = conn

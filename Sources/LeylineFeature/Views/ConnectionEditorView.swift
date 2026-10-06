@@ -120,21 +120,9 @@ struct ConnectionEditorView: View {
 
     private func save() {
         guard let portValue else { return }
-        if var c = existing {
-            c.label = label
-            c.host = host
-            c.port = portValue
-            c.username = username
-            c.authMode = authMode
-            c.keyID = authMode == .key ? keyID : nil
-            store.updateConnection(c)
-            store.setPassword(authMode == .password ? password : nil, for: c)
-        } else {
-            store.addConnection(
-                label: label, host: host, port: portValue, username: username,
-                authMode: authMode, keyID: authMode == .key ? keyID : nil,
-                password: authMode == .password ? password : nil)
-        }
+        store.saveConnection(
+            existing: existing, label: label, host: host, port: portValue, username: username,
+            authMode: authMode, keyID: keyID, password: password)
         onClose()
     }
 }
