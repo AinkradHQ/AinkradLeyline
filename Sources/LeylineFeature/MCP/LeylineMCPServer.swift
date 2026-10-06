@@ -4,26 +4,23 @@ import Foundation
 /// Publishes Leyline's connection catalogue to the host assistant as MCP tools.
 ///
 /// The shape follows Lore's `LoreMCPServer` and Git Mage's `GitMageMCPServer` —
-/// a declarative tool table, `[GuardRule]` arrays for `rejects`/`injects`, and a
-/// `make` that accumulates `addTool` failures — because that pattern encodes
-/// safety properties that are not app-specific. Leyline is the fourth adopter,
-/// and the two things it does differently are both consequences of what it
-/// stores:
+/// a declarative tool table and a `make` that accumulates `addTool` failures —
+/// because that pattern encodes safety properties that are not app-specific.
+/// Leyline is the fourth adopter, and the two things it does differently are
+/// both consequences of what it stores:
 ///
 /// 1. **The tool set is tiny and read-heavy on purpose.** Leyline's store holds
 ///    credentials, so the interesting design question was not "what can we
 ///    publish" but "what must we not". Nothing that mutates the connection or
 ///    key store is published, and nothing that takes or returns credential
 ///    material exists at all — see `LeylineMCPOperations` and `LeylineCatalog`.
-/// 2. **`rejects` and `injects` are empty across the whole table**, and that is
-///    the honest state rather than an oversight. Those arrays exist to split one
-///    operation into a guarded tool and a `destructive: true` twin when an
-///    ARGUMENT decides irreversibility — `overwritingExternalChanges` in Lore,
-///    `reset`/`reset_hard` in Git Mage. Leyline has no such argument: `connect`
-///    takes one connection id and nothing else, and its consequence is fixed by
-///    the tool, not by what the caller passes. The machinery is kept so the
-///    fourth adopter reads like the first three and so a future guarded
-///    argument has somewhere to go, but it is currently carrying no weight.
+/// 2. **No argument guards (`rejects`/`injects`).** The other adopters use them
+///    to split one operation into a guarded tool and a `destructive: true` twin
+///    when an ARGUMENT decides irreversibility — `overwritingExternalChanges` in
+///    Lore, `reset`/`reset_hard` in Git Mage. Leyline has no such argument:
+///    `connect` takes one connection id and nothing else, and its consequence is
+///    fixed by the tool, not by what the caller passes. The machinery was
+///    deleted unused; a future guarded argument brings it back with its user.
 ///
 /// ## Destructive classification
 ///
@@ -73,27 +70,10 @@ enum LeylineMCPServer {
         /// is not `Sendable`; `MCPToolSpec` wants a string anyway.
         let schemaJSON: String
 
-        /// Argument keys this tool must refuse, so an irreversible behaviour
-        /// stays unreachable through a tool the host does not gate. The call is
-        /// refused if **ANY** rule matches — the safe direction, since adding a
-        /// rule only narrows what gets through.
-        ///
-        /// Empty for every Leyline tool today; see this enum's doc comment for
-        /// why, and note that an exact-match rule is only sound when it mirrors
-        /// its sink's coercion exactly.
-        var rejects: [GuardRule] = []
-
-        /// Argument keys this tool sets itself, ignoring what was passed. **ALL**
-        /// listed values are injected — a destructive twin owns every argument
-        /// its safe counterpart refuses. Empty for every Leyline tool today.
-        var injects: [GuardRule] = []
-
         init(
             _ name: String, _ operation: String, _ summary: String,
             destructive: Bool = false, readOnly: Bool = false,
-            schemaJSON: String,
-            rejects: [GuardRule] = [],
-            injects: [GuardRule] = []
+            schemaJSON: String
         ) {
             self.name = name
             self.operation = operation
@@ -101,47 +81,6 @@ enum LeylineMCPServer {
             self.destructive = destructive
             self.readOnly = readOnly
             self.schemaJSON = schemaJSON
-            self.rejects = rejects
-            self.injects = injects
-        }
-    }
-
-    /// One guarded argument key/value pair.
-    struct GuardRule {
-        let key: String
-        let value: ArgumentValue
-        init(_ key: String, _ value: ArgumentValue) {
-            self.key = key
-            self.value = value
-        }
-    }
-
-    /// The argument shapes the reject/inject rules need. Exact matches, sound
-    /// only when their sinks are exact too.
-    enum ArgumentValue {
-        case string(String)
-        case bool(Bool)
-
-        /// Whether a value decoded from the call's arguments equals this one.
-        func matches(_ any: Any) -> Bool {
-            switch self {
-            case .string(let s): return (any as? String) == s
-            case .bool(let b): return (any as? Bool) == b
-            }
-        }
-
-        var foundation: Any {
-            switch self {
-            case .string(let s): return s
-            case .bool(let b): return b
-            }
-        }
-
-        var described: String {
-            switch self {
-            case .string(let s): return "\"\(s)\""
-            case .bool(let b): return "\(b)"
-            }
         }
     }
 
@@ -233,9 +172,9 @@ enum LeylineMCPServer {
 
     // MARK: - call handling
 
-    /// Internal rather than `private` so the tests can drive a test-only guarded
-    /// `Tool` fixture through the real gate/inject logic without bending the
-    /// live `tools` table (which has no guards today).
+    /// Forwards one tool call to `perform` as `{"operation": ..., <arguments>}`.
+    /// Internal rather than `private` so the tests can drive malformed
+    /// arguments straight at it.
     static func invoke(
         _ tool: Tool, arguments: String,
         perform: @MainActor @Sendable (String) async -> AgentActionResult
@@ -247,19 +186,6 @@ enum LeylineMCPServer {
         else {
             return AgentActionResult(text: "\(tool.name): malformed arguments", isError: true)
         }
-
-        // The gate: a behaviour the host treats as needing approval must not be
-        // reachable through a tool it does not gate. ANY matching rule refuses.
-        for rule in tool.rejects {
-            guard let passed = object[rule.key], rule.value.matches(passed) else { continue }
-            return AgentActionResult(
-                text: "\(tool.name) refuses \(rule.key) = \(rule.value.described) — "
-                    + "it needs approval. Use the dedicated tool instead.",
-                isError: true)
-        }
-        // ALL injected values are applied — a destructive twin owns every
-        // argument its safe counterpart refuses.
-        for rule in tool.injects { object[rule.key] = rule.value.foundation }
 
         object["operation"] = tool.operation
         guard let payload = try? JSONSerialization.data(withJSONObject: object) else {

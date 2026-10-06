@@ -103,40 +103,6 @@ struct LeylineMCPEdgeCaseTests {
         }
     }
 
-    /// The guard machinery is unused by the live table (Leyline has no argument
-    /// that decides irreversibility), so exercise it through a fixture — if it
-    /// ever gains a real user, the mechanism is already proven.
-    @Test("the reject/inject gate still works for a future guarded argument")
-    func guardMachineryWorks() async throws {
-        #expect(LeylineMCPServer.tools.allSatisfy { $0.rejects.isEmpty && $0.injects.isEmpty })
-
-        var seen: [String] = []
-        let sink: @MainActor @Sendable (String) async -> AgentActionResult = { json in
-            seen.append(json)
-            return AgentActionResult(text: "ok", isError: false)
-        }
-        let guarded = LeylineMCPServer.Tool(
-            "fixture", "fixture", "",
-            schemaJSON: #"{"type":"object"}"#,
-            rejects: [.init("force", .bool(true))])
-        let refused = await LeylineMCPServer.invoke(
-            guarded, arguments: #"{"force":true}"#, perform: sink)
-        #expect(refused.isError)
-        #expect(seen.isEmpty)
-
-        let twin = LeylineMCPServer.Tool(
-            "fixture_forced", "fixture", "", destructive: true,
-            schemaJSON: #"{"type":"object"}"#,
-            injects: [.init("force", .bool(true))])
-        let allowed = await LeylineMCPServer.invoke(twin, arguments: "{}", perform: sink)
-        #expect(!allowed.isError)
-        let object =
-            (try? JSONSerialization.jsonObject(
-                with: Data(seen[0].utf8))) as? [String: Any]
-        #expect(object?["force"] as? Bool == true)
-        #expect(object?["operation"] as? String == "fixture")
-    }
-
     @Test("malformed arguments are rejected without reaching the sink")
     func malformedArguments() async throws {
         var reached = false
