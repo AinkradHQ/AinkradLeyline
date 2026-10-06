@@ -12,6 +12,7 @@ struct KeyVaultView: View {
     @State private var pasteBody = ""
     @State private var pastePassphrase = ""
     @State private var hovered: UUID?
+    @State private var importError: String?
 
     private var t: HostThemeTokens { theme.tokens }
 
@@ -26,6 +27,16 @@ struct KeyVaultView: View {
                 AinkradButton(title: "Paste", style: .secondary, icon: "doc.on.clipboard") { showingPaste = true }
             }
             LeylineHUD.glowRule(t)
+
+            if let importError {
+                HStack(spacing: AinkradSpacing.xs) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(AinkradFontResolver.font(.caption, typography: typo))
+                    Text(importError).font(AinkradFontResolver.font(.caption, typography: typo)).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    AinkradIconButton(systemName: "xmark", size: 18) { self.importError = nil }
+                }
+                .foregroundStyle(t.accentTertiary)
+            }
 
             if store.keys.isEmpty {
                 emptyKeys
@@ -134,7 +145,12 @@ struct KeyVaultView: View {
     private func importFile(_ url: URL) {
         let didAccess = url.startAccessingSecurityScopedResource()
         defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-        guard let body = try? String(contentsOf: url, encoding: .utf8) else { return }
-        store.importKey(label: url.lastPathComponent, privateKey: body, passphrase: nil)
+        switch KeyImportFile.read(url) {
+        case .success(let body):
+            importError = nil
+            store.importKey(label: url.lastPathComponent, privateKey: body, passphrase: nil)
+        case .failure(let e):
+            importError = e.message
+        }
     }
 }
