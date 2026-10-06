@@ -17,6 +17,7 @@ struct ConnectionEditorView: View {
     @State private var keyID: UUID?
 
     private var t: HostThemeTokens { theme.tokens }
+    private var portValue: Int? { PortField.parse(port) }
 
     /// `AinkradSelect` needs a `Hashable` selection with no associated
     /// optionality — wraps `keyID: UUID?` (`.none` is a real, selectable
@@ -61,6 +62,14 @@ struct ConnectionEditorView: View {
                     AinkradTextField(text: $port, placeholder: "22")
                 }.frame(width: 110)
             }
+            if portValue == nil {
+                HStack(spacing: AinkradSpacing.xs) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(AinkradFontResolver.font(.caption, typography: typo))
+                    Text(PortField.errorMessage).font(AinkradFontResolver.font(.caption, typography: typo))
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(t.accentTertiary)
+            }
             AinkradFormRow(title: "Username") {
                 AinkradTextField(text: $username, placeholder: "deploy")
             }
@@ -85,7 +94,7 @@ struct ConnectionEditorView: View {
                 Spacer()
                 AinkradButton(title: "Cancel", style: .ghost) { onClose() }.keyboardShortcut(.cancelAction)
                 AinkradButton(title: "Save", style: .primary, icon: "checkmark") { save() }
-                    .disabled(host.isEmpty)
+                    .disabled(host.isEmpty || portValue == nil)
                     .keyboardShortcut(.defaultAction)
             }
             .padding(.top, 4)
@@ -105,7 +114,7 @@ struct ConnectionEditorView: View {
     }
 
     private func save() {
-        let portValue = Int(port) ?? 22
+        guard let portValue else { return }
         if var c = existing {
             c.label = label; c.host = host; c.port = portValue; c.username = username
             c.authMode = authMode; c.keyID = authMode == .key ? keyID : nil
