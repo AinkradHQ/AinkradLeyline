@@ -136,7 +136,8 @@ struct LeylineRootView: View {
                     .opacity(isHover ? 1 : 0)
                     .allowsHitTesting(isHover)
 
-                    AinkradButton(title: "Connect", style: .primary, icon: "bolt.fill") { connect(conn) }  // always-visible primary action
+                    // Always-visible primary action.
+                    AinkradButton(title: "Connect", style: .primary, icon: "bolt.fill") { connect(conn) }
                 }
             }
         )
