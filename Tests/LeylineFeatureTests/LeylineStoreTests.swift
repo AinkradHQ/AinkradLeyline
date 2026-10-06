@@ -109,6 +109,74 @@ struct LeylineStoreTests {
             docs.storage[LeylineDocument.documentID] == seed,
             "the only copy of the user's data was overwritten")
     }
+
+    @Test("updating a connection persists the edit and reloads it")
+    func updateConnectionPersists() {
+        let docs = FakeDocs()
+        let secrets = FakeSecrets()
+        let store = LeylineStore(documents: docs, secrets: secrets)
+        var c = store.addConnection(
+            label: "c", host: "h", port: 22, username: "u", authMode: .password, keyID: nil, password: nil)
+        c.label = "renamed"
+        c.port = 2222
+        store.updateConnection(c)
+        let reloaded = LeylineStore(documents: docs, secrets: secrets)
+        #expect(reloaded.connections == [c])
+    }
+
+    @Test("updating a connection that is not saved changes nothing")
+    func updateUnknownConnectionIsANoOp() {
+        let docs = FakeDocs()
+        let store = LeylineStore(documents: docs, secrets: FakeSecrets())
+        _ = store.addConnection(
+            label: "c", host: "h", port: 22, username: "u", authMode: .password, keyID: nil, password: nil)
+        let saved = docs.storage[LeylineDocument.documentID]
+        let stranger = LeylineConnection(
+            id: UUID(), label: "x", host: "x", port: 22, username: "x", authMode: .password, keyID: nil,
+            createdAt: Date())
+        store.updateConnection(stranger)
+        #expect(store.connections.count == 1)
+        #expect(docs.storage[LeylineDocument.documentID] == saved)
+    }
+
+    @Test("setPassword stores a value and clears on empty or nil")
+    func setPasswordStoresAndClears() {
+        let store = LeylineStore(documents: FakeDocs(), secrets: FakeSecrets())
+        let c = store.addConnection(
+            label: "c", host: "h", port: 22, username: "u", authMode: .password, keyID: nil, password: nil)
+        store.setPassword("pw", for: c)
+        #expect(store.password(for: c) == "pw")
+        store.setPassword("", for: c)
+        #expect(store.password(for: c) == nil)
+        store.setPassword("pw", for: c)
+        store.setPassword(nil, for: c)
+        #expect(store.password(for: c) == nil)
+    }
+
+    @Test("no document loads empty and saving stays on")
+    func missingDocumentLoadsEmptyAndSaves() {
+        let docs = FakeDocs()
+        let store = LeylineStore(documents: docs, secrets: FakeSecrets())
+        #expect(store.connections.isEmpty && store.keys.isEmpty)
+        _ = store.importKey(label: "k", privateKey: "PK", passphrase: nil)
+        #expect(docs.storage[LeylineDocument.documentID] != nil)
+    }
+
+    @Test("with saving off, no mutation overwrites the unreadable original")
+    func savingOffBlocksEveryMutation() {
+        let seed = Data("{not json".utf8)
+        let docs = RejectingCorruptDocs()
+        docs.setData(seed, forKey: LeylineDocument.documentID)
+        let store = LeylineStore(documents: docs, secrets: FakeSecrets())
+        let key = store.importKey(label: "k", privateKey: "PK", passphrase: nil)
+        var c = store.addConnection(
+            label: "c", host: "h", port: 22, username: "u", authMode: .key, keyID: key.id, password: nil)
+        c.label = "renamed"
+        store.updateConnection(c)
+        store.removeKey(key)
+        store.removeConnection(c)
+        #expect(docs.storage[LeylineDocument.documentID] == seed)
+    }
 }
 
 /// In-memory document store whose `setData` ignores backup keys, simulating a

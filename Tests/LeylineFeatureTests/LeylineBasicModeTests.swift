@@ -123,7 +123,8 @@ final class BasicModeHost: HostServices, PluginInstanceIdentity {
     }
     var log: PluginLogger { FakeLog() }
     var context: PluginContextRegistry { FakeContext() }
-    var actions: AgentActionProvider { FakeActions() }
+    let actionRecorder = RecordingActions()
+    var actions: AgentActionProvider { actionRecorder }
     var apps: PluginAppLauncher { launcher }
     var presentation: PluginPresentationControl { FakePresentation() }
     var mode: PluginModeControl { FakeMode() }
@@ -142,14 +143,19 @@ struct FakeLog: PluginLogger {
     }
     func remove(_ token: PluginContextToken) {}
 }
-@MainActor struct FakeActions: AgentActionProvider {
+/// Records every registration and removal, so teardown can be checked.
+@MainActor final class RecordingActions: AgentActionProvider {
+    private(set) var registered: [(actionID: String, token: AgentActionToken)] = []
+    private(set) var removed: [AgentActionToken] = []
     func register(
         actionID: String,
         handler: @escaping @MainActor (String) async -> AgentActionResult
     ) -> AgentActionToken {
-        AgentActionToken()
+        let token = AgentActionToken()
+        registered.append((actionID, token))
+        return token
     }
-    func remove(_ token: AgentActionToken) {}
+    func remove(_ token: AgentActionToken) { removed.append(token) }
 }
 @MainActor struct FakePresentation: PluginPresentationControl {
     var current: PluginPresentation { .overlay }
