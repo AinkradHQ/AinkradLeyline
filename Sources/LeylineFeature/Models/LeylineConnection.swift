@@ -18,10 +18,17 @@ public struct LeylineConnection: Codable, Equatable, Identifiable {
     /// Keychain id for this connection's password (password auth only).
     public var passwordSecretID: String { "conn.\(id.uuidString).password" }
 
-    public init(id: UUID, label: String, host: String, port: Int, username: String,
-                authMode: AuthMode, keyID: UUID?, createdAt: Date) {
-        self.id = id; self.label = label; self.host = host; self.port = port
-        self.username = username; self.authMode = authMode; self.keyID = keyID
+    public init(
+        id: UUID, label: String, host: String, port: Int, username: String,
+        authMode: AuthMode, keyID: UUID?, createdAt: Date
+    ) {
+        self.id = id
+        self.label = label
+        self.host = host
+        self.port = port
+        self.username = username
+        self.authMode = authMode
+        self.keyID = keyID
         self.createdAt = createdAt
     }
 }

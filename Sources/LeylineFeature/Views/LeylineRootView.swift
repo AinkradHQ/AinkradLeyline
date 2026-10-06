@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 struct LeylineRootView: View {
     @Bindable var store: LeylineStore
@@ -39,7 +39,7 @@ struct LeylineRootView: View {
             }
             content
         }
-        .background(Color.clear)                       // let the host HUD panel blur show through
+        .background(Color.clear)  // let the host HUD panel blur show through
         // In-surface HUD overlays (chamfer + dim + scrim/Esc dismiss), scoped
         // to this root view — never a native `.sheet`. The `editing` modal is
         // driven by the item's presence; `editing` itself stays available to
@@ -47,10 +47,12 @@ struct LeylineRootView: View {
         .ainkradModal(isPresented: $showingNew) {
             ConnectionEditorView(store: store, theme: theme, existing: nil, onClose: { showingNew = false })
         }
-        .ainkradModal(isPresented: Binding(
-            get: { editing != nil },
-            set: { isPresented in if !isPresented { editing = nil } }
-        )) {
+        .ainkradModal(
+            isPresented: Binding(
+                get: { editing != nil },
+                set: { isPresented in if !isPresented { editing = nil } }
+            )
+        ) {
             if let editing {
                 ConnectionEditorView(store: store, theme: theme, existing: editing, onClose: { self.editing = nil })
             }
@@ -112,7 +114,7 @@ struct LeylineRootView: View {
         AinkradListRow(
             isSelected: isHover,
             leading: {
-                Image(systemName: conn.authMode == .key ? "key.fill" : "lock.fill")   // auth badge
+                Image(systemName: conn.authMode == .key ? "key.fill" : "lock.fill")  // auth badge
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(authColor)
                     .frame(width: 24, height: 24)
@@ -123,16 +125,18 @@ struct LeylineRootView: View {
             subtitle: SSHCommand.string(for: conn),
             trailing: {
                 HStack(spacing: 6) {
-                    HStack(spacing: 6) {                                    // hover-revealed secondary actions
-                        AinkradIconButton(systemName: copied == conn.id ? "checkmark" : "doc.on.doc") { copyCommand(conn) }
-                            .help("Copy ssh command")
+                    HStack(spacing: 6) {  // hover-revealed secondary actions
+                        AinkradIconButton(systemName: copied == conn.id ? "checkmark" : "doc.on.doc") {
+                            copyCommand(conn)
+                        }
+                        .help("Copy ssh command")
                         AinkradIconButton(systemName: "pencil") { editing = conn }.help("Edit")
                         AinkradIconButton(systemName: "trash") { store.removeConnection(conn) }.help("Delete")
                     }
                     .opacity(isHover ? 1 : 0)
                     .allowsHitTesting(isHover)
 
-                    AinkradButton(title: "Connect", style: .primary, icon: "bolt.fill") { connect(conn) }   // always-visible primary action
+                    AinkradButton(title: "Connect", style: .primary, icon: "bolt.fill") { connect(conn) }  // always-visible primary action
                 }
             }
         )

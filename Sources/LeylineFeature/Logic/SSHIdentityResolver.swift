@@ -60,7 +60,8 @@ enum SSHIdentityResolver {
         guard conn.authMode == .key else { return .passwordAuth }
         guard let keyID = conn.keyID else { return .noKeySelected }
         guard let key = store.keys.first(where: { $0.id == keyID }),
-              let material = store.privateKey(for: key) else { return .keyUnavailable }
+            let material = store.privateKey(for: key)
+        else { return .keyUnavailable }
         // `materialize` throws rather than shipping a key it could not protect;
         // the thrown error carries the path, so it is swallowed rather than
         // described.

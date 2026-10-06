@@ -1,5 +1,5 @@
-import Foundation
 import AinkradAppKit
+import Foundation
 
 /// The ONLY view of Leyline's data that the MCP layer is given.
 ///
@@ -72,10 +72,12 @@ struct LeylineCatalog {
     /// `SSHLaunchPayload` and never prints it.
     let identity: @MainActor (LeylineConnection) -> SSHIdentityResolution
 
-    init(connections: @escaping @MainActor () -> [LeylineConnection],
-         keys: @escaping @MainActor () -> [LeylineKey],
-         launch: @escaping @MainActor (SSHLaunchPayload) -> PluginLaunchOutcome,
-         identity: @escaping @MainActor (LeylineConnection) -> SSHIdentityResolution) {
+    init(
+        connections: @escaping @MainActor () -> [LeylineConnection],
+        keys: @escaping @MainActor () -> [LeylineKey],
+        launch: @escaping @MainActor (SSHLaunchPayload) -> PluginLaunchOutcome,
+        identity: @escaping @MainActor (LeylineConnection) -> SSHIdentityResolution
+    ) {
         self.connections = connections
         self.keys = keys
         self.launch = launch

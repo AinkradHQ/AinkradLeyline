@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 public struct LeylineApp: AinkradApp {
     public static let id = "leyline"
@@ -106,8 +106,9 @@ public struct LeylineApp: AinkradApp {
     /// builds that Appearance tab for every declared page — so this declares
     /// no groups of its own. `makeSettingsView` stays for older hosts.
     public static func settingsCatalog(host: HostServices) -> SettingsPage? {
-        SettingsPage(path: SettingsPath([id]), title: displayName, icon: icon,
-                     group: .installedApps, order: 0, groups: [], appID: id)
+        SettingsPage(
+            path: SettingsPath([id]), title: displayName, icon: icon,
+            group: .installedApps, order: 0, groups: [], appID: id)
     }
 
     public static func makeSettingsView(host: HostServices) -> AnyView {

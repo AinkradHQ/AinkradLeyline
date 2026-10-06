@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 /// Leyline's **basic** mode: pick a connection, connect. Nothing else.
 ///
@@ -28,9 +28,11 @@ struct LeylineBasicView: View {
     private var filtered: [LeylineConnection] { ConnectionFilter.matching(query, in: store.connections) }
 
     var body: some View {
-        AinkradBasicShell(icon: "point.3.connected.trianglepath.dotted",
-                          title: "Leyline",
-                          subtitle: subtitle) {
+        AinkradBasicShell(
+            icon: "point.3.connected.trianglepath.dotted",
+            title: "Leyline",
+            subtitle: subtitle
+        ) {
             VStack(spacing: AinkradSpacing.sm) {
                 if store.connections.count > 5 {
                     AinkradSearchField(text: $query, placeholder: "Search connections")

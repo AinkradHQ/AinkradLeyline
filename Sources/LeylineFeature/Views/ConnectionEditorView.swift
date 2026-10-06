@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 struct ConnectionEditorView: View {
     @Bindable var store: LeylineStore
@@ -64,7 +64,8 @@ struct ConnectionEditorView: View {
             }
             if portValue == nil {
                 HStack(spacing: AinkradSpacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(AinkradFontResolver.font(.caption, typography: typo))
+                    Image(systemName: "exclamationmark.triangle.fill").font(
+                        AinkradFontResolver.font(.caption, typography: typo))
                     Text(PortField.errorMessage).font(AinkradFontResolver.font(.caption, typography: typo))
                     Spacer(minLength: 0)
                 }
@@ -108,22 +109,31 @@ struct ConnectionEditorView: View {
 
     private func load() {
         guard let c = existing else { return }
-        label = c.label; host = c.host; port = String(c.port); username = c.username
-        authMode = c.authMode; keyID = c.keyID
+        label = c.label
+        host = c.host
+        port = String(c.port)
+        username = c.username
+        authMode = c.authMode
+        keyID = c.keyID
         if c.authMode == .password { password = store.password(for: c) ?? "" }
     }
 
     private func save() {
         guard let portValue else { return }
         if var c = existing {
-            c.label = label; c.host = host; c.port = portValue; c.username = username
-            c.authMode = authMode; c.keyID = authMode == .key ? keyID : nil
+            c.label = label
+            c.host = host
+            c.port = portValue
+            c.username = username
+            c.authMode = authMode
+            c.keyID = authMode == .key ? keyID : nil
             store.updateConnection(c)
             store.setPassword(authMode == .password ? password : nil, for: c)
         } else {
-            store.addConnection(label: label, host: host, port: portValue, username: username,
-                                authMode: authMode, keyID: authMode == .key ? keyID : nil,
-                                password: authMode == .password ? password : nil)
+            store.addConnection(
+                label: label, host: host, port: portValue, username: username,
+                authMode: authMode, keyID: authMode == .key ? keyID : nil,
+                password: authMode == .password ? password : nil)
         }
         onClose()
     }

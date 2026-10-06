@@ -7,8 +7,8 @@ public enum ConnectionFilter {
         guard !q.isEmpty else { return connections }
         return connections.filter {
             $0.label.lowercased().contains(q)
-            || $0.host.lowercased().contains(q)
-            || $0.username.lowercased().contains(q)
+                || $0.host.lowercased().contains(q)
+                || $0.username.lowercased().contains(q)
         }
     }
 }

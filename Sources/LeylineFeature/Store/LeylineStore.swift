@@ -1,6 +1,6 @@
+import AinkradAppKit
 import Foundation
 import Observation
-import AinkradAppKit
 
 /// Owns the connection + key lists and mediates their secrets. Metadata is
 /// persisted as one document via `host.documents`; secrets go to `host.secrets`
@@ -76,11 +76,14 @@ public final class LeylineStore {
     // MARK: Connections
 
     @discardableResult
-    public func addConnection(label: String, host: String, port: Int, username: String,
-                              authMode: LeylineConnection.AuthMode, keyID: UUID?,
-                              password: String?) -> LeylineConnection {
-        let conn = LeylineConnection(id: UUID(), label: label, host: host, port: port,
-                                     username: username, authMode: authMode, keyID: keyID, createdAt: Date())
+    public func addConnection(
+        label: String, host: String, port: Int, username: String,
+        authMode: LeylineConnection.AuthMode, keyID: UUID?,
+        password: String?
+    ) -> LeylineConnection {
+        let conn = LeylineConnection(
+            id: UUID(), label: label, host: host, port: port,
+            username: username, authMode: authMode, keyID: keyID, createdAt: Date())
         if authMode == .password, let password, !password.isEmpty {
             secrets.setSecret(password, forKey: conn.passwordSecretID)
         }

@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 /// Leyline's settings surface — an info blurb plus the shared surface rows.
 ///
@@ -21,9 +21,10 @@ struct LeylineSettingsView: View {
                     .font(AinkradFontResolver.font(.body, typography: typo))
                     .foregroundStyle(theme.foreground)
 
-                AinkradSurfaceSettings(appName: "Leyline",
-                                       presentation: presentation,
-                                       mode: modeControl)
+                AinkradSurfaceSettings(
+                    appName: "Leyline",
+                    presentation: presentation,
+                    mode: modeControl)
             }
         }
         .padding()

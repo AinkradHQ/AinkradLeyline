@@ -1,5 +1,6 @@
-import Testing
 import Foundation
+import Testing
+
 @testable import LeylineFeature
 
 @Suite("SSHKeyMaterializer")
@@ -30,7 +31,8 @@ struct SSHKeyMaterializerLifecycleTests {
 
         _ = try SSHKeyMaterializer.keysDirectory()
 
-        let mode = (try FileManager.default.attributesOfItem(atPath: dir.path)[.posixPermissions] as? NSNumber)?.intValue
+        let mode = (try FileManager.default.attributesOfItem(atPath: dir.path)[.posixPermissions] as? NSNumber)?
+            .intValue
         #expect(mode == 0o700, "an existing keys directory kept its loose permissions")
     }
 
@@ -101,17 +103,23 @@ struct LeylineTeardownKeyPurgeTests {
     private func materialize(on host: BasicModeHost) throws -> (keyID: UUID, path: String) {
         let store = LeylineApp.store(for: host)
         let key = store.importKey(label: "k", privateKey: "PRIVATE-\(UUID())", passphrase: nil)
-        let conn = store.addConnection(label: "c", host: "h", port: 22, username: "u",
-                                       authMode: .key, keyID: key.id, password: nil)
+        let conn = store.addConnection(
+            label: "c", host: "h", port: 22, username: "u",
+            authMode: .key, keyID: key.id, password: nil)
         let path = try #require(SSHIdentityResolver.resolve(conn, store: store).path)
         return (key.id, path)
     }
 
     @Test("tearing one instance down leaves another instance's key file")
     func teardownLeavesOtherInstancesKeys() throws {
-        let a = BasicModeHost(), b = BasicModeHost()
-        let keyA = try materialize(on: a), keyB = try materialize(on: b)
-        defer { SSHKeyMaterializer.purge(keyID: keyA.keyID); SSHKeyMaterializer.purge(keyID: keyB.keyID) }
+        let a = BasicModeHost()
+        let b = BasicModeHost()
+        let keyA = try materialize(on: a)
+        let keyB = try materialize(on: b)
+        defer {
+            SSHKeyMaterializer.purge(keyID: keyA.keyID)
+            SSHKeyMaterializer.purge(keyID: keyB.keyID)
+        }
 
         LeylineApp.teardown(instance: a.instanceID)
 

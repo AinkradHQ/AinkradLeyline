@@ -1,5 +1,5 @@
-import Foundation
 import AinkradAppKit
+import Foundation
 
 /// Publishes Leyline's connection catalogue to the host assistant as MCP tools.
 ///
@@ -88,11 +88,13 @@ enum LeylineMCPServer {
         /// its safe counterpart refuses. Empty for every Leyline tool today.
         var injects: [GuardRule] = []
 
-        init(_ name: String, _ operation: String, _ summary: String,
-             destructive: Bool = false, readOnly: Bool = false,
-             schemaJSON: String,
-             rejects: [GuardRule] = [],
-             injects: [GuardRule] = []) {
+        init(
+            _ name: String, _ operation: String, _ summary: String,
+            destructive: Bool = false, readOnly: Bool = false,
+            schemaJSON: String,
+            rejects: [GuardRule] = [],
+            injects: [GuardRule] = []
+        ) {
             self.name = name
             self.operation = operation
             self.summary = summary
@@ -124,21 +126,21 @@ enum LeylineMCPServer {
         func matches(_ any: Any) -> Bool {
             switch self {
             case .string(let s): return (any as? String) == s
-            case .bool(let b):   return (any as? Bool) == b
+            case .bool(let b): return (any as? Bool) == b
             }
         }
 
         var foundation: Any {
             switch self {
             case .string(let s): return s
-            case .bool(let b):   return b
+            case .bool(let b): return b
             }
         }
 
         var described: String {
             switch self {
             case .string(let s): return "\"\(s)\""
-            case .bool(let b):   return "\(b)"
+            case .bool(let b): return "\(b)"
             }
         }
     }
@@ -146,43 +148,50 @@ enum LeylineMCPServer {
     // MARK: - the table
 
     static let tools: [Tool] = [
-        Tool("list_connections", "listConnections",
-             "List the SSH hosts saved in Leyline. Returns each connection's id, label, "
-             + "username, host, port and which authentication method it uses. Never returns "
-             + "passwords, private keys or passphrases — those cannot be read from here at "
-             + "all. Pass the returned label to connect (the id also works, and is needed "
-             + "only when two connections share a label).",
-             readOnly: true,
-             schemaJSON: schema(
+        Tool(
+            "list_connections", "listConnections",
+            "List the SSH hosts saved in Leyline. Returns each connection's id, label, "
+                + "username, host, port and which authentication method it uses. Never returns "
+                + "passwords, private keys or passphrases — those cannot be read from here at "
+                + "all. Pass the returned label to connect (the id also works, and is needed "
+                + "only when two connections share a label).",
+            readOnly: true,
+            schemaJSON: schema(
                 properties: [
-                    ("query", "string",
-                     "Optional case-insensitive filter over label, host and username. "
-                     + "Omit to list every saved connection."),
+                    (
+                        "query", "string",
+                        "Optional case-insensitive filter over label, host and username. "
+                            + "Omit to list every saved connection."
+                    )
                 ], required: [])),
 
-        Tool("list_keys", "listKeys",
-             "List the SSH keys imported into Leyline's vault, by id and label only. Key "
-             + "material and passphrases are held in the Keychain and are not readable "
-             + "through any tool. Use this to tell the user which key a connection uses, "
-             + "not to obtain a key.",
-             readOnly: true,
-             schemaJSON: schema(properties: [], required: [])),
+        Tool(
+            "list_keys", "listKeys",
+            "List the SSH keys imported into Leyline's vault, by id and label only. Key "
+                + "material and passphrases are held in the Keychain and are not readable "
+                + "through any tool. Use this to tell the user which key a connection uses, "
+                + "not to obtain a key.",
+            readOnly: true,
+            schemaJSON: schema(properties: [], required: [])),
 
-        Tool("connect", "connect",
-             "Open a Rune session to a saved connection. This starts an "
-             + "authenticated SSH session to a REMOTE machine using the user's stored "
-             + "credentials, so it needs approval. Call list_connections first, then pass "
-             + "the connection's label — the label is what the user reads on the approval "
-             + "card. Use the id only when two connections share a label. A hostname is "
-             + "never accepted.",
-             destructive: true,
-             schemaJSON: schema(
+        Tool(
+            "connect", "connect",
+            "Open a Rune session to a saved connection. This starts an "
+                + "authenticated SSH session to a REMOTE machine using the user's stored "
+                + "credentials, so it needs approval. Call list_connections first, then pass "
+                + "the connection's label — the label is what the user reads on the approval "
+                + "card. Use the id only when two connections share a label. A hostname is "
+                + "never accepted.",
+            destructive: true,
+            schemaJSON: schema(
                 properties: [
-                    ("connection", "string",
-                     "The connection's label, exactly as returned by list_connections — "
-                     + "prefer the label so the approval prompt names a machine the user "
-                     + "recognises. The id is also accepted, and is required when two "
-                     + "connections share the same label."),
+                    (
+                        "connection", "string",
+                        "The connection's label, exactly as returned by list_connections — "
+                            + "prefer the label so the approval prompt names a machine the user "
+                            + "recognises. The id is also accepted, and is required when two "
+                            + "connections share the same label."
+                    )
                 ], required: ["connection"])),
     ]
 
@@ -195,9 +204,12 @@ enum LeylineMCPServer {
     /// Returns the names of any tools `addTool` refused alongside the server: a
     /// dropped tool is a silently missing capability, so the caller must not be
     /// able to ignore it by accident.
-    static func make(appID: String,
-                     perform: @escaping @MainActor @Sendable (String) async -> AgentActionResult)
-        -> (server: MCPAppServer, failures: [String]) {
+    static func make(
+        appID: String,
+        perform: @escaping @MainActor @Sendable (String) async -> AgentActionResult
+    )
+        -> (server: MCPAppServer, failures: [String])
+    {
         let server = MCPAppServer(appID: appID)
         var failures: [String] = []
         for tool in tools {
@@ -205,14 +217,15 @@ enum LeylineMCPServer {
             // see this enum's doc comment. It is a settable `var` rather than an
             // `init` parameter for ABI reasons, so "not set" is the way to say
             // false, and saying it explicitly would be the same instruction.
-            let added = server.addTool(MCPToolSpec(
-                name: tool.name,
-                description: tool.summary,
-                schemaJSON: tool.schemaJSON,
-                destructive: tool.destructive,
-                readOnly: tool.readOnly,
-                handler: { arguments in await invoke(tool, arguments: arguments, perform: perform) }
-            ))
+            let added = server.addTool(
+                MCPToolSpec(
+                    name: tool.name,
+                    description: tool.summary,
+                    schemaJSON: tool.schemaJSON,
+                    destructive: tool.destructive,
+                    readOnly: tool.readOnly,
+                    handler: { arguments in await invoke(tool, arguments: arguments, perform: perform) }
+                ))
             if !added { failures.append(tool.name) }
         }
         return (server, failures)
@@ -223,11 +236,15 @@ enum LeylineMCPServer {
     /// Internal rather than `private` so the tests can drive a test-only guarded
     /// `Tool` fixture through the real gate/inject logic without bending the
     /// live `tools` table (which has no guards today).
-    static func invoke(_ tool: Tool, arguments: String,
-                       perform: @MainActor @Sendable (String) async -> AgentActionResult)
-        async -> AgentActionResult {
+    static func invoke(
+        _ tool: Tool, arguments: String,
+        perform: @MainActor @Sendable (String) async -> AgentActionResult
+    )
+        async -> AgentActionResult
+    {
         guard let data = arguments.data(using: .utf8),
-              var object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            var object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        else {
             return AgentActionResult(text: "\(tool.name): malformed arguments", isError: true)
         }
 
@@ -255,8 +272,10 @@ enum LeylineMCPServer {
 
     /// Builds a tool's JSON Schema string from a flat property list. Returns a
     /// string so the tool table stays a `Sendable` `static let`.
-    private static func schema(properties: [(String, String, String)],
-                               required: [String]) -> String {
+    private static func schema(
+        properties: [(String, String, String)],
+        required: [String]
+    ) -> String {
         var props: [String: Any] = [:]
         for (name, type, description) in properties {
             props[name] = ["type": type, "description": description]

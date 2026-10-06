@@ -48,14 +48,16 @@ enum SSHKeyMaterializer {
         let url = base.appendingPathComponent(keyID.uuidString)
 
         var body = privateKey
-        if !body.hasSuffix("\n") { body.append("\n") }        // ssh requires a trailing newline
+        if !body.hasSuffix("\n") { body.append("\n") }  // ssh requires a trailing newline
 
         // Create the file EMPTY at 0600, then write into it. `createFile`
         // applies its attributes at creation, so there is no instant at which
         // key material exists under looser permissions.
         try? FileManager.default.removeItem(at: url)
-        guard FileManager.default.createFile(
-            atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600]) else {
+        guard
+            FileManager.default.createFile(
+                atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600])
+        else {
             throw MaterializerError.couldNotCreateFile(url.path)
         }
         let handle = try FileHandle(forWritingTo: url)
@@ -81,8 +83,8 @@ enum SSHKeyMaterializer {
     }
 }
 
-private extension FileManager {
-    func attributesOfItemPosixPermissions(atPath path: String) -> Int? {
+extension FileManager {
+    fileprivate func attributesOfItemPosixPermissions(atPath path: String) -> Int? {
         (try? attributesOfItem(atPath: path))?[.posixPermissions] as? Int
     }
 }
@@ -99,7 +101,7 @@ private extension FileManager {
 /// caller (`materialize`, `purge`, teardown) is redirected through
 /// the one function they all route through. A test written later cannot get
 /// it wrong.
-fileprivate func root() throws -> URL {
+private func root() throws -> URL {
     if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
         return FileManager.default.temporaryDirectory.appendingPathComponent(
             "LeylineTests-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)

@@ -12,7 +12,9 @@ public struct LeylineKey: Codable, Equatable, Identifiable {
     public var passphraseSecretID: String { "key.\(id.uuidString).passphrase" }
 
     public init(id: UUID, label: String, hasPassphrase: Bool, createdAt: Date) {
-        self.id = id; self.label = label; self.hasPassphrase = hasPassphrase
+        self.id = id
+        self.label = label
+        self.hasPassphrase = hasPassphrase
         self.createdAt = createdAt
     }
 }

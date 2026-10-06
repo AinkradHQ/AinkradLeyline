@@ -1,6 +1,7 @@
-import Testing
-import Foundation
 import AinkradAppKit
+import Foundation
+import Testing
+
 @testable import LeylineFeature
 
 /// A local mirror of the host's `SSHConnectionInfo`
@@ -22,22 +23,26 @@ private let secretMarker = "AINKRAD-FAKE-SECRET-MATERIAL-DO-NOT-LEAK-8F2A"
 /// Leyline store or Keychain**: `FakeDocs` is in-memory and `FakeSecrets` stands
 /// in for the host's Keychain-backed store.
 @MainActor
-private func makeFixture() -> (bridge: LeylineConnectionBridge, store: LeylineStore,
-                               keyConn: LeylineConnection, passwordConn: LeylineConnection,
-                               key: LeylineKey, lockedConn: LeylineConnection,
-                               lockedKey: LeylineKey) {
+private func makeFixture() -> (
+    bridge: LeylineConnectionBridge, store: LeylineStore,
+    keyConn: LeylineConnection, passwordConn: LeylineConnection,
+    key: LeylineKey, lockedConn: LeylineConnection,
+    lockedKey: LeylineKey
+) {
     let store = LeylineStore(documents: FakeDocs(), secrets: FakeSecrets())
     let key = store.importKey(
         label: "Prod deploy key",
         privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----\n\(secretMarker)\n"
             + "-----END OPENSSH PRIVATE KEY-----",
         passphrase: nil)
-    let keyConn = store.addConnection(label: "Prod web", host: "web.example.com", port: 2222,
-                                      username: "deploy", authMode: .key, keyID: key.id,
-                                      password: nil)
-    let passwordConn = store.addConnection(label: "Legacy box", host: "legacy.example.com",
-                                           port: 22, username: "root", authMode: .password,
-                                           keyID: nil, password: "password-\(secretMarker)")
+    let keyConn = store.addConnection(
+        label: "Prod web", host: "web.example.com", port: 2222,
+        username: "deploy", authMode: .key, keyID: key.id,
+        password: nil)
+    let passwordConn = store.addConnection(
+        label: "Legacy box", host: "legacy.example.com",
+        port: 22, username: "root", authMode: .password,
+        keyID: nil, password: "password-\(secretMarker)")
     // A passphrase-protected key: same headless dead end as a password, since
     // `BatchMode=yes` disables the passphrase prompt too.
     let lockedKey = store.importKey(
@@ -45,9 +50,10 @@ private func makeFixture() -> (bridge: LeylineConnectionBridge, store: LeylineSt
         privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----\n\(secretMarker)\n"
             + "-----END OPENSSH PRIVATE KEY-----",
         passphrase: "passphrase-\(secretMarker)")
-    let lockedConn = store.addConnection(label: "Staging box", host: "staging.example.com",
-                                         port: 22, username: "deploy", authMode: .key,
-                                         keyID: lockedKey.id, password: nil)
+    let lockedConn = store.addConnection(
+        label: "Staging box", host: "staging.example.com",
+        port: 22, username: "deploy", authMode: .key,
+        keyID: lockedKey.id, password: nil)
     let bridge = LeylineConnectionBridge(
         connections: { store.connections },
         keys: { store.keys },
@@ -61,8 +67,9 @@ private func resolve(_ bridge: LeylineConnectionBridge, _ id: String) -> AgentAc
     return bridge.resolve(String(decoding: payload, as: UTF8.self))
 }
 
-@Suite("leyline.resolve_connection — the host-side connection bridge",
-       .timeLimit(.minutes(1)))
+@Suite(
+    "leyline.resolve_connection — the host-side connection bridge",
+    .timeLimit(.minutes(1)))
 @MainActor
 struct LeylineConnectionBridgeTests {
 
@@ -197,9 +204,10 @@ struct LeylineConnectionBridgeTests {
         let fixture = makeFixture()
         // A label that mimics another connection's id: user-typed text must
         // never outrank Leyline's own unforgeable name for a connection.
-        _ = fixture.store.addConnection(label: fixture.keyConn.id.uuidString,
-                                        host: "decoy.example.com", port: 22, username: "root",
-                                        authMode: .key, keyID: fixture.key.id, password: nil)
+        _ = fixture.store.addConnection(
+            label: fixture.keyConn.id.uuidString,
+            host: "decoy.example.com", port: 22, username: "root",
+            authMode: .key, keyID: fixture.key.id, password: nil)
         let reply = resolve(fixture.bridge, fixture.keyConn.id.uuidString)
         #expect(!reply.isError)
         let info = try JSONDecoder().decode(SSHConnectionInfo.self, from: Data(reply.text.utf8))
@@ -209,9 +217,10 @@ struct LeylineConnectionBridgeTests {
     @Test("an ambiguous label is refused, naming the ambiguity, and resolves nothing")
     func ambiguousLabelRefused() {
         let fixture = makeFixture()
-        _ = fixture.store.addConnection(label: "Prod web", host: "web2.example.com", port: 22,
-                                        username: "deploy", authMode: .key, keyID: fixture.key.id,
-                                        password: nil)
+        _ = fixture.store.addConnection(
+            label: "Prod web", host: "web2.example.com", port: 22,
+            username: "deploy", authMode: .key, keyID: fixture.key.id,
+            password: nil)
         let reply = resolve(fixture.bridge, "prod web")
         #expect(reply.isError)
         #expect(reply.text.contains("2 saved connections share the label \"Prod web\""))

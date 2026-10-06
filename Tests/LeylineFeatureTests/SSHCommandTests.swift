@@ -1,13 +1,17 @@
-import Testing
 import Foundation
+import Testing
+
 @testable import LeylineFeature
 
 @Suite("SSHCommand")
 struct SSHCommandTests {
-    private func conn(port: Int = 22, user: String = "deploy", host: String = "example.com",
-                      auth: LeylineConnection.AuthMode = .password) -> LeylineConnection {
-        LeylineConnection(id: UUID(), label: "l", host: host, port: port, username: user,
-                          authMode: auth, keyID: nil, createdAt: Date())
+    private func conn(
+        port: Int = 22, user: String = "deploy", host: String = "example.com",
+        auth: LeylineConnection.AuthMode = .password
+    ) -> LeylineConnection {
+        LeylineConnection(
+            id: UUID(), label: "l", host: host, port: port, username: user,
+            authMode: auth, keyID: nil, createdAt: Date())
     }
 
     @Test("default port is omitted")
@@ -27,7 +31,8 @@ struct SSHCommandTests {
 
     @Test("identity file adds -i, shell-quoted when it has spaces")
     func identityFile() {
-        #expect(SSHCommand.string(for: conn(), identityFile: "/tmp/My Key")
+        #expect(
+            SSHCommand.string(for: conn(), identityFile: "/tmp/My Key")
                 == "ssh -i '/tmp/My Key' deploy@example.com")
     }
 }

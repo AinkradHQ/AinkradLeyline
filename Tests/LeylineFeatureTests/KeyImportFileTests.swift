@@ -1,5 +1,6 @@
-import Testing
 import Foundation
+import Testing
+
 @testable import LeylineFeature
 
 @Suite("KeyImportFile")
@@ -20,7 +21,10 @@ struct KeyImportFileTests {
     @Test("a missing file fails with a message")
     func missing() {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("nope-\(UUID())")
-        guard case .failure(let e) = KeyImportFile.read(url) else { Issue.record("expected failure"); return }
+        guard case .failure(let e) = KeyImportFile.read(url) else {
+            Issue.record("expected failure")
+            return
+        }
         #expect(!e.message.isEmpty)
     }
 
@@ -28,7 +32,10 @@ struct KeyImportFileTests {
     func binary() throws {
         let url = try tempFile(Data([0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE, 0x00]))
         defer { try? FileManager.default.removeItem(at: url) }
-        guard case .failure(let e) = KeyImportFile.read(url) else { Issue.record("expected failure"); return }
+        guard case .failure(let e) = KeyImportFile.read(url) else {
+            Issue.record("expected failure")
+            return
+        }
         #expect(!e.message.isEmpty)
     }
 
@@ -36,6 +43,9 @@ struct KeyImportFileTests {
     func empty() throws {
         let url = try tempFile(Data())
         defer { try? FileManager.default.removeItem(at: url) }
-        guard case .failure = KeyImportFile.read(url) else { Issue.record("expected failure"); return }
+        guard case .failure = KeyImportFile.read(url) else {
+            Issue.record("expected failure")
+            return
+        }
     }
 }

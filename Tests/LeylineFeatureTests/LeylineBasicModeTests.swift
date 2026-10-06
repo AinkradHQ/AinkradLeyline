@@ -1,6 +1,7 @@
-import Testing
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
+import Testing
+
 @testable import LeylineFeature
 
 /// Leyline's basic mode.
@@ -16,8 +17,9 @@ import AinkradAppKit
 struct LeylineBasicModeTests {
 
     private func conn(host: String = "example.com") -> LeylineConnection {
-        LeylineConnection(id: UUID(), label: "box", host: host, port: 22,
-                          username: "ahmed", authMode: .password, keyID: nil, createdAt: Date())
+        LeylineConnection(
+            id: UUID(), label: "box", host: host, port: 22,
+            username: "ahmed", authMode: .password, keyID: nil, createdAt: Date())
     }
 
     @Test("Leyline opts into modes, so the host's cast finds it")
@@ -88,7 +90,10 @@ struct LeylineBasicModeTests {
 
 @MainActor
 final class BasicModeLauncher: PluginAppLauncher, PluginAppLauncherResult {
-    struct Open: Equatable { let appID: String; let payload: String? }
+    struct Open: Equatable {
+        let appID: String
+        let payload: String?
+    }
     var opened: [Open] = []
     var outcome: PluginLaunchOutcome = .opened
 
@@ -110,9 +115,11 @@ final class BasicModeHost: HostServices, PluginInstanceIdentity {
     let launcher = BasicModeLauncher()
 
     var theme: HostTheme {
-        HostTheme(.init(themeID: "t", background: .black, surface: .black,
-                        surfaceElevated: .black, accentPrimary: .white,
-                        accentSecondary: .white, accentTertiary: .white, foreground: .white))
+        HostTheme(
+            .init(
+                themeID: "t", background: .black, surface: .black,
+                surfaceElevated: .black, accentPrimary: .white,
+                accentSecondary: .white, accentTertiary: .white, foreground: .white))
     }
     var log: PluginLogger { FakeLog() }
     var context: PluginContextRegistry { FakeContext() }
@@ -136,8 +143,10 @@ struct FakeLog: PluginLogger {
     func remove(_ token: PluginContextToken) {}
 }
 @MainActor struct FakeActions: AgentActionProvider {
-    func register(actionID: String,
-                  handler: @escaping @MainActor (String) async -> AgentActionResult) -> AgentActionToken {
+    func register(
+        actionID: String,
+        handler: @escaping @MainActor (String) async -> AgentActionResult
+    ) -> AgentActionToken {
         AgentActionToken()
     }
     func remove(_ token: AgentActionToken) {}

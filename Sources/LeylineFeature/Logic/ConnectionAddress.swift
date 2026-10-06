@@ -44,8 +44,10 @@ enum ConnectionAddress {
         case notFound
     }
 
-    static func resolve(_ identifier: String,
-                        in connections: [LeylineConnection]) -> Match {
+    static func resolve(
+        _ identifier: String,
+        in connections: [LeylineConnection]
+    ) -> Match {
         if let byID = connections.first(where: {
             $0.id.uuidString.caseInsensitiveCompare(identifier) == .orderedSame
         }) {
@@ -55,8 +57,8 @@ enum ConnectionAddress {
             !$0.label.isEmpty && $0.label.caseInsensitiveCompare(identifier) == .orderedSame
         }
         switch byLabel.count {
-        case 0:  return .notFound
-        case 1:  return .one(byLabel[0])
+        case 0: return .notFound
+        case 1: return .one(byLabel[0])
         // The label echoed here is the STORED one, not the caller's string —
         // the same provenance as every other connection field these surfaces
         // already print, so "no tool output contains caller-supplied text"
@@ -69,6 +71,6 @@ enum ConnectionAddress {
     /// bridge and again in `connect` is not told two different things.
     static func ambiguityMessage(label: String, count: Int) -> String {
         "\(count) saved connections share the label \"\(label)\". Leyline will not guess which "
-        + "machine you mean — call list_connections and pass the id of the one you want."
+            + "machine you mean — call list_connections and pass the id of the one you want."
     }
 }

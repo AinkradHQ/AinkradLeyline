@@ -1,4 +1,5 @@
 import Testing
+
 @testable import LeylineFeature
 
 @Suite("PortField")
@@ -8,8 +9,9 @@ struct PortFieldTests {
         #expect(PortField.parse(text) == value)
     }
 
-    @Test("invalid ports are rejected, never defaulted to 22",
-          arguments: ["", " ", "0", "65536", "99999999999999999999", "-1", "+22", "22a", "2 2", "abc", "٢٢"])
+    @Test(
+        "invalid ports are rejected, never defaulted to 22",
+        arguments: ["", " ", "0", "65536", "99999999999999999999", "-1", "+22", "22a", "2 2", "abc", "٢٢"])
     func invalid(text: String) {
         #expect(PortField.parse(text) == nil)
     }

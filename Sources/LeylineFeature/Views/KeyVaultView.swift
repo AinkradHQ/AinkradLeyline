@@ -1,5 +1,5 @@
-import SwiftUI
 import AinkradAppKit
+import SwiftUI
 
 struct KeyVaultView: View {
     @Bindable var store: LeylineStore
@@ -30,8 +30,10 @@ struct KeyVaultView: View {
 
             if let importError {
                 HStack(spacing: AinkradSpacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(AinkradFontResolver.font(.caption, typography: typo))
-                    Text(importError).font(AinkradFontResolver.font(.caption, typography: typo)).fixedSize(horizontal: false, vertical: true)
+                    Image(systemName: "exclamationmark.triangle.fill").font(
+                        AinkradFontResolver.font(.caption, typography: typo))
+                    Text(importError).font(AinkradFontResolver.font(.caption, typography: typo)).fixedSize(
+                        horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                     AinkradIconButton(systemName: "xmark", size: 18) { self.importError = nil }
                 }
@@ -71,7 +73,8 @@ struct KeyVaultView: View {
                     .foregroundStyle(t.accentTertiary)
                     .frame(width: 24, height: 24)
                     .background(ChamferShape(cut: AinkradRadius.sm).fill(t.accentTertiary.opacity(0.14)))
-                    .overlay(ChamferShape(cut: AinkradRadius.sm).strokeBorder(t.accentTertiary.opacity(0.3), lineWidth: 0.5))
+                    .overlay(
+                        ChamferShape(cut: AinkradRadius.sm).strokeBorder(t.accentTertiary.opacity(0.3), lineWidth: 0.5))
             },
             title: key.label,
             subtitle: key.hasPassphrase ? "Passphrase-protected" : nil,
@@ -121,10 +124,14 @@ struct KeyVaultView: View {
     }
 
     private func importPasted() {
-        store.importKey(label: pasteLabel.isEmpty ? "Imported Key" : pasteLabel,
-                        privateKey: pasteBody,
-                        passphrase: pastePassphrase.isEmpty ? nil : pastePassphrase)
-        pasteLabel = ""; pasteBody = ""; pastePassphrase = ""; showingPaste = false
+        store.importKey(
+            label: pasteLabel.isEmpty ? "Imported Key" : pasteLabel,
+            privateKey: pasteBody,
+            passphrase: pastePassphrase.isEmpty ? nil : pastePassphrase)
+        pasteLabel = ""
+        pasteBody = ""
+        pastePassphrase = ""
+        showingPaste = false
     }
 
     /// Uses `NSOpenPanel` (not SwiftUI's `.fileImporter`) so hidden files are
