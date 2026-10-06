@@ -63,13 +63,7 @@ struct ConnectionEditorView: View {
                 }.frame(width: 110)
             }
             if portValue == nil {
-                HStack(spacing: AinkradSpacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(
-                        AinkradFontResolver.font(.caption, typography: typo))
-                    Text(PortField.errorMessage).font(AinkradFontResolver.font(.caption, typography: typo))
-                    Spacer(minLength: 0)
-                }
-                .foregroundStyle(t.accentTertiary)
+                AinkradBanner(message: PortField.errorMessage, status: .danger)
             }
             AinkradFormRow(title: "Username") {
                 AinkradTextField(text: $username, placeholder: "deploy")

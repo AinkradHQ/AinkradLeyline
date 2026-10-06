@@ -29,15 +29,7 @@ struct KeyVaultView: View {
             LeylineHUD.glowRule(t)
 
             if let importError {
-                HStack(spacing: AinkradSpacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(
-                        AinkradFontResolver.font(.caption, typography: typo))
-                    Text(importError).font(AinkradFontResolver.font(.caption, typography: typo)).fixedSize(
-                        horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    AinkradIconButton(systemName: "xmark", size: 18) { self.importError = nil }
-                }
-                .foregroundStyle(t.accentTertiary)
+                AinkradBanner(message: importError, status: .danger, onDismiss: { self.importError = nil })
             }
 
             if store.keys.isEmpty {

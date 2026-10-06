@@ -28,14 +28,8 @@ struct LeylineRootView: View {
                 .padding(.bottom, 10)
             LeylineHUD.glowRule(t).padding(.horizontal, 14)
             if let launchError {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
-                    Text(launchError).font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    AinkradIconButton(systemName: "xmark", size: 18) { self.launchError = nil }
-                }
-                .foregroundStyle(t.accentTertiary)
-                .padding(.horizontal, 14).padding(.top, 8)
+                AinkradBanner(message: launchError, status: .warning, onDismiss: { self.launchError = nil })
+                    .padding(.horizontal, 14).padding(.top, 8)
             }
             content
         }

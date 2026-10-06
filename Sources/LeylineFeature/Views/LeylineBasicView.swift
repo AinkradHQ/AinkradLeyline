@@ -38,7 +38,7 @@ struct LeylineBasicView: View {
                     AinkradSearchField(text: $query, placeholder: "Search connections")
                 }
                 if let launchError {
-                    errorRow(launchError)
+                    AinkradBanner(message: launchError, status: .warning, onDismiss: { self.launchError = nil })
                 }
                 content
             }
@@ -65,18 +65,6 @@ struct LeylineBasicView: View {
                 }
             }
         }
-    }
-
-    private func errorRow(_ message: String) -> some View {
-        HStack(spacing: AinkradSpacing.xs) {
-            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
-            Text(message)
-                .font(.system(size: 11))
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            AinkradIconButton(systemName: "xmark", size: 18) { launchError = nil }
-        }
-        .foregroundStyle(t.accentTertiary)
     }
 
     /// No hover-revealed edit/delete/copy — those manage a connection rather
