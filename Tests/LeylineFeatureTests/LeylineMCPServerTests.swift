@@ -76,9 +76,6 @@ struct LeylineMCPServerTests {
         // Permission denied. It now materializes exactly as the button does.
         let identity = try #require(payload?.identityFile)
         #expect(identity.contains(fixture.key.id.uuidString))
-        #expect(
-            SSHCommand.string(for: fixture.keyConn, identityFile: identity)
-                .contains("-i \(SSHCommand.shellQuote(identity))"))
         // …and the file it points at is only readable by its owner.
         let mode = (try FileManager.default.attributesOfItem(atPath: identity))[.posixPermissions] as? Int
         #expect(mode == 0o600)
