@@ -111,9 +111,9 @@ struct LeylineRootView: View {
                     .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
                     .foregroundStyle(authColor)
                     .frame(width: skin.size.s24, height: skin.size.s24)
-                    .background(ChamferShape(cut: AinkradRadius.sm).fill(authColor.opacity(skin.opacity.o14)))
+                    .background(skin.shape(cut: AinkradRadius.sm).fill(authColor.opacity(skin.opacity.o14)))
                     .overlay(
-                        ChamferShape(cut: AinkradRadius.sm).strokeBorder(
+                        skin.shape(cut: AinkradRadius.sm).strokeBorder(
                             authColor.opacity(skin.opacity.o30), lineWidth: 0.5))
             },
             title: conn.label.isEmpty ? conn.host : conn.label,
