@@ -62,9 +62,9 @@ struct KeyVaultView: View {
                     .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
                     .foregroundStyle(t.accentTertiary)
                     .frame(width: skin.size.s24, height: skin.size.s24)
-                    .background(ChamferShape(cut: AinkradRadius.sm).fill(t.accentTertiary.opacity(skin.opacity.o14)))
+                    .background(skin.shape(cut: AinkradRadius.sm).fill(t.accentTertiary.opacity(skin.opacity.o14)))
                     .overlay(
-                        ChamferShape(cut: AinkradRadius.sm).strokeBorder(
+                        skin.shape(cut: AinkradRadius.sm).strokeBorder(
                             t.accentTertiary.opacity(skin.opacity.o30), lineWidth: 0.5))
             },
             title: key.label,
