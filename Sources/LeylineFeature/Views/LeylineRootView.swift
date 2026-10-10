@@ -62,9 +62,11 @@ struct LeylineRootView: View {
             Image(systemName: "point.3.connected.trianglepath.dotted")
                 .font(skin.font(AinkradFontToken(sizeKey: "t15", weight: "semibold")))
                 .foregroundStyle(t.accentSecondary)
-                .shadow(color: t.accentSecondary.opacity(skin.opacity.o50), radius: skin.size.s5)
-            Text("LEYLINE")
-                .font(skin.font(AinkradFontToken(sizeKey: "t12", weight: "bold", mono: "system"))).kerning(3)
+                // Liquid Glass draws no glows.
+                .shadow(color: skin.usesNativeGlass ? .clear : t.accentSecondary.opacity(skin.opacity.o50), radius: skin.size.s5)
+            Text(skin.labelCased("Leyline"))
+                .font(skin.font(AinkradFontToken(sizeKey: "t12", weight: "bold", mono: "system")))
+                .kerning(skin.type.labelCase == "none" ? 0 : 3)
                 .foregroundStyle(t.foreground.opacity(skin.opacity.o85))
             Spacer()
             AinkradIconButton(systemName: "key.fill", tooltip: "SSH Keys") { showingKeys = true }
@@ -105,7 +107,9 @@ struct LeylineRootView: View {
         let isHover = hovered == conn.id
         let authColor = conn.authMode == .key ? t.accentTertiary : t.accentSecondary
         AinkradListRow(
-            isSelected: isHover,
+            // Neon lights the hovered row; under Liquid Glass "selected" is the
+            // solid accent fill, so hover is left to the row's own quiet fill.
+            isSelected: isHover && !skin.usesNativeGlass,
             leading: {
                 Image(systemName: conn.authMode == .key ? "key.fill" : "lock.fill")  // auth badge
                     .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
@@ -113,8 +117,9 @@ struct LeylineRootView: View {
                     .frame(width: skin.size.s24, height: skin.size.s24)
                     .background(skin.shape(cut: AinkradRadius.sm).fill(authColor.opacity(skin.opacity.o14)))
                     .overlay(
+                        // Liquid Glass: a tinted tile, no outline.
                         skin.shape(cut: AinkradRadius.sm).strokeBorder(
-                            authColor.opacity(skin.opacity.o30), lineWidth: 0.5))
+                            skin.usesNativeGlass ? .clear : authColor.opacity(skin.opacity.o30), lineWidth: 0.5))
             },
             title: conn.label.isEmpty ? conn.host : conn.label,
             subtitle: SSHCommand.string(for: conn),

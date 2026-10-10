@@ -56,7 +56,8 @@ struct KeyVaultView: View {
     @ViewBuilder private func keyRow(_ key: LeylineKey) -> some View {
         let isHover = hovered == key.id
         AinkradListRow(
-            isSelected: isHover,
+            // As in the connection list: under Liquid Glass hover is the row's own quiet fill.
+            isSelected: isHover && !skin.usesNativeGlass,
             leading: {
                 Image(systemName: "key.fill")
                     .font(skin.font(AinkradFontToken(sizeKey: "t11", weight: "semibold")))
@@ -64,8 +65,9 @@ struct KeyVaultView: View {
                     .frame(width: skin.size.s24, height: skin.size.s24)
                     .background(skin.shape(cut: AinkradRadius.sm).fill(t.accentTertiary.opacity(skin.opacity.o14)))
                     .overlay(
+                        // Liquid Glass: a tinted tile, no outline.
                         skin.shape(cut: AinkradRadius.sm).strokeBorder(
-                            t.accentTertiary.opacity(skin.opacity.o30), lineWidth: 0.5))
+                            skin.usesNativeGlass ? .clear : t.accentTertiary.opacity(skin.opacity.o30), lineWidth: 0.5))
             },
             title: key.label,
             subtitle: key.hasPassphrase ? "Passphrase-protected" : nil,
